@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Users ─────────────────────────────────────────
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  image        String?
+  memberships  TeamMember[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+// ─── Teams ─────────────────────────────────────────
+
+model Team {
+  id          String           @id @default(cuid())
+  name        String
+  members     TeamMember[]
+  commitments TeamCommitment[]
+  invitations TeamInvitation[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model TeamMember {
+  id            String   @id @default(cuid())
+  teamId        String
+  userId        String
+  role          TeamRole @default(MEMBER)
+  dedicationPct Int?
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([teamId, userId])
+}
+
+enum TeamRole {
+  OWNER
+  MEMBER
+}
+
+model TeamInvitation {
+  id            String           @id @default(cuid())
+  teamId        String
+  name          String?
+  email         String
+  dedicationPct Int?
+  invitedById   String
+  status        InvitationStatus @default(PENDING)
+  team          Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([teamId, email])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+}
+
+// ─── Commitments ───────────────────────────────────
+
+model TeamCommitment {
+  id     String @id @default(cuid())
+  teamId String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  // Strategic Intent (embedded 1:1)
+  strategicIntent String
+
+  // Primary Outcome (embedded 1:1)
+  primaryOutcomeStatement String?
+  primaryMetric           String
+  primaryBaseline         Float?
+  primaryTarget           Float
+  primaryCurrent          Float
+
+  // Cycle (embedded 1:1)
+  cycleLabel     String?
+  cycleStartDate DateTime
+  cycleEndDate   DateTime
+
+  status CommitmentStatus @default(ACTIVE)
+
+  // Completion
+  completionNotes String?
+  completedAt     DateTime?
+
+  // Abandonment
+  abandonmentReason String?
+  abandonedAt       DateTime?
+
+  supportingSignals SupportingSignal[]
+  initiatives       Initiative[]
+  checkIns          GripSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CommitmentStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+// ─── Supporting Signals ────────────────────────────
+
+model SupportingSignal {
+  id           String         @id @default(cuid())
+  commitmentId String
+  commitment   TeamCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  statement    String?
+  metric       String
+  baseline     Float?
+  target       Float
+  current      Float
+  order        Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+// ─── Initiatives ───────────────────────────────────
+
+model Initiative {
+  id              String           @id @default(cuid())
+  commitmentId    String
+  commitment      TeamCommitment   @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  name            String
+  hypothesis      String
+  expectedImpact  Json?
+  status          InitiativeStatus @default(ACTIVE)
+  conclusionReason String?
+  conclusionImpact String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+enum InitiativeStatus {
+  ACTIVE
+  CONCLUDED
+}
+
+// ─── GRIP Sessions (Impact Check-ins) ──────────────
+
+model GripSession {
+  id           String         @id @default(cuid())
+  commitmentId String
+  commitment   TeamCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+
+  occurredAt                DateTime
+  confidence                Confidence
+  confidenceReason          String?
+  primaryOutcomeSnapshot    Float
+  resultsReflection         String
+  initiativeReflection      String?
+  issues                    String
+  planForward               String
+  supportingSignalSnapshots Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Confidence {
+  HIGH
+  MEDIUM
+  LOW
+}

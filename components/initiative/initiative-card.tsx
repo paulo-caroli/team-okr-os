@@ -1,0 +1,234 @@
+"use client"
+
+import { useState, useActionState, useEffect } from "react"
+import type { InitiativeView } from "@/lib/domain/initiative"
+import type { SupportingSignal } from "@/lib/domain/commitment"
+import { concludeInitiative, reactivateInitiative, deleteInitiative } from "@/lib/actions/initiative-actions"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+
+interface InitiativeCardProps {
+  initiative: InitiativeView
+  teamId: string
+  signals: SupportingSignal[]
+  readOnly?: boolean
+}
+
+function truncateToLines(text: string, maxLines: number): string {
+  const lines = text.split("\n").slice(0, maxLines)
+  const result = lines.join(" ").trim()
+  if (result.length > 140) return result.slice(0, 140).trim() + "…"
+  if (text.split("\n").length > maxLines) return result + "…"
+  return result
+}
+
+export function InitiativeCard({ initiative, teamId, signals, readOnly = false }: InitiativeCardProps) {
+  const [showConcludeModal, setShowConcludeModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [reactivating, setReactivating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [concludeState, concludeAction, isConcluding] = useActionState(concludeInitiative, null)
+
+  useEffect(() => {
+    if (concludeState && "success" in concludeState && concludeState.success) {
+      setShowConcludeModal(false)
+    }
+  }, [concludeState])
+
+  const signalMap = new Map(signals.map((s) => [s.id, s.statement || s.metric]))
+  const beliefSummary = truncateToLines(initiative.hypothesis, 2)
+
+  async function handleReactivate() {
+    setReactivating(true)
+    await reactivateInitiative(initiative.id, teamId)
+    setReactivating(false)
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    await deleteInitiative(initiative.id, teamId)
+    setDeleting(false)
+  }
+
+  return (
+    <>
+      <Card className="py-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              {initiative.name}
+            </h4>
+            <Badge variant={initiative.status === "ACTIVE" ? "active" : "completed"}>
+              {initiative.status === "ACTIVE" ? "Active" : "Concluded"}
+            </Badge>
+          </div>
+
+          <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+            {beliefSummary}
+          </p>
+
+          {initiative.expectedImpact && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {initiative.expectedImpact.primary && (
+                <span className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                  → Primary Outcome
+                </span>
+              )}
+              {initiative.expectedImpact.signalIds.map((signalId) => (
+                <span
+                  key={signalId}
+                  className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                >
+                  → {signalMap.get(signalId) || "Signal"}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {initiative.status === "CONCLUDED" && initiative.conclusionReason && (
+            <div className="mt-2 rounded border border-zinc-100 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                Concluded
+                {initiative.conclusionImpact && (
+                  <span className="ml-1 font-normal">
+                    — Impact: {initiative.conclusionImpact}
+                  </span>
+                )}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                {truncateToLines(initiative.conclusionReason, 2)}
+              </p>
+            </div>
+          )}
+
+          {!readOnly && (
+            <div className="mt-3 flex gap-2">
+              {initiative.status === "ACTIVE" ? (
+                <button
+                  type="button"
+                  onClick={() => setShowConcludeModal(true)}
+                  className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                >
+                  Conclude
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleReactivate}
+                  disabled={reactivating}
+                  className="text-xs text-zinc-400 underline hover:text-zinc-600 disabled:opacity-50 dark:text-zinc-500 dark:hover:text-zinc-300"
+                >
+                  Reactivate
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-xs text-red-400 underline hover:text-red-600 dark:text-red-500 dark:hover:text-red-400"
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Conclude modal */}
+      {showConcludeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Conclude Initiative
+            </h3>
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              {initiative.name}
+            </p>
+            <form action={concludeAction} className="mt-4 space-y-4">
+              <input type="hidden" name="initiativeId" value={initiative.id} />
+              <input type="hidden" name="teamId" value={teamId} />
+
+              {concludeState?.error && (
+                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                  {concludeState.error}
+                </div>
+              )}
+
+              <Textarea
+                name="conclusionReason"
+                label="Why are we concluding this initiative?"
+                placeholder="e.g., The original hypothesis was invalidated. We learned that..."
+                required
+                rows={3}
+              />
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Did it influence the Primary Outcome as expected?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {["Yes", "Partially", "No", "Too early to tell"].map((opt) => (
+                    <label key={opt} className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="conclusionImpact"
+                        value={opt}
+                        className="h-3.5 w-3.5 border-zinc-300 text-zinc-900 focus:ring-zinc-400 dark:border-zinc-600"
+                      />
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowConcludeModal(false)}
+                  disabled={isConcluding}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" loading={isConcluding}>
+                  Confirm
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Delete this initiative?
+            </h3>
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              This action cannot be undone.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                loading={deleting}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
