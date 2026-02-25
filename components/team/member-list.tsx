@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import type { TeamMemberInfo } from "@/lib/domain/team"
 import { removeTeamMember } from "@/lib/actions/team-actions"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +13,8 @@ interface MemberListProps {
 }
 
 export function MemberList({ members, teamId, isOwner }: MemberListProps) {
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+
   return (
     <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
       {members.map((member) => (
@@ -41,11 +44,33 @@ export function MemberList({ members, teamId, isOwner }: MemberListProps) {
           </div>
 
           {isOwner && member.role !== "OWNER" && (
-            <form action={() => removeTeamMember(teamId, member.id)}>
-              <Button variant="ghost" size="sm" type="submit">
+            confirmingId === member.id ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Are you sure?
+                </span>
+                <form action={() => removeTeamMember(teamId, member.id)}>
+                  <Button variant="destructive" size="sm" type="submit">
+                    Confirm
+                  </Button>
+                </form>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmingId(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmingId(member.id)}
+              >
                 Remove
               </Button>
-            </form>
+            )
           )}
         </div>
       ))}

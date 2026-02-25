@@ -522,7 +522,6 @@ export function GripForm({
                 <Textarea
                   name="issues"
                   placeholder="Describe issues, blockers, risks, or concerns..."
-                  required
                   rows={4}
                 />
               </Card>
@@ -543,7 +542,6 @@ export function GripForm({
                 <Textarea
                   name="planForward"
                   placeholder="Next actions, adjustments, experiments, changes in approach..."
-                  required
                   rows={4}
                 />
               </Card>

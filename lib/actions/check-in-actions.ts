@@ -25,8 +25,8 @@ export async function createCheckIn(
   const primaryOutcomeSnapshotStr = formData.get("primaryOutcomeSnapshot") as string
   const resultsReflection = (formData.get("resultsReflection") as string)?.trim()
   const initiativeReflection = (formData.get("initiativeReflection") as string)?.trim() || null
-  const issues = (formData.get("issues") as string)?.trim()
-  const planForward = (formData.get("planForward") as string)?.trim()
+  const issues = (formData.get("issues") as string)?.trim() || ""
+  const planForward = (formData.get("planForward") as string)?.trim() || ""
 
   if (!occurredDateStr) return { error: "Please select a check-in date." }
   if (!confidence || !["HIGH", "MEDIUM", "LOW"].includes(confidence)) {
@@ -39,8 +39,6 @@ export async function createCheckIn(
   }
 
   if (!resultsReflection) return { error: "Please describe the current status of the Primary Outcome." }
-  if (!issues) return { error: "Please describe any issues or blockers." }
-  if (!planForward) return { error: "Please describe the plan forward." }
 
   const occurredAt = occurredTimeStr
     ? new Date(`${occurredDateStr}T${occurredTimeStr}`)
