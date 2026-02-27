@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { trackEvent } from "@/lib/analytics"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import type { Confidence } from "@/lib/domain/check-in"
@@ -92,6 +93,12 @@ export async function createCheckIn(
           Object.keys(signalSnapshots).length > 0 ? signalSnapshots : undefined,
       },
     })
+  })
+
+  trackEvent({
+    userId: session.user.id,
+    event: "checkin_created",
+    properties: { teamId, commitmentId, checkInId: checkIn.id, confidence },
   })
 
   revalidatePath(`/team/${teamId}`)

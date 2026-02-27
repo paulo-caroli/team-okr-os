@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { trackEvent } from "@/lib/analytics"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
@@ -129,6 +130,12 @@ export async function createCommitment(
     },
   })
 
+  trackEvent({
+    userId: session.user.id,
+    event: "commitment_created",
+    properties: { teamId, commitmentId: commitment.id, signalCount: signals.length },
+  })
+
   redirect(`/team/${teamId}/commitment/${commitment.id}`)
 }
 
@@ -216,6 +223,12 @@ export async function completeCommitment(
       completionNotes: notes,
       completedAt: new Date(),
     },
+  })
+
+  trackEvent({
+    userId: session.user.id,
+    event: "commitment_completed",
+    properties: { teamId, commitmentId },
   })
 
   revalidatePath(`/team/${teamId}`)

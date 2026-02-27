@@ -2,6 +2,7 @@
 
 import { signIn, signOut } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { trackEvent } from "@/lib/analytics"
 import bcrypt from "bcryptjs"
 import { AuthError } from "next-auth"
 
@@ -99,6 +100,8 @@ export async function signUpAction(
   const newUser = await db.user.create({
     data: { name, email, passwordHash },
   })
+
+  trackEvent({ userId: newUser.id, event: "user_signed_up" })
 
   // Auto-accept any pending team invitations for this email
   await acceptPendingInvitations(newUser.id, email)

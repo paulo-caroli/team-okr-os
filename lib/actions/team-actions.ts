@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { trackEvent } from "@/lib/analytics"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { sendInvitationEmail } from "@/lib/email"
@@ -43,6 +44,8 @@ export async function createTeam(
       },
     },
   })
+
+  trackEvent({ userId: session.user.id, event: "team_created", properties: { teamId: team.id } })
 
   redirect(`/team/${team.id}/setup`)
 }
