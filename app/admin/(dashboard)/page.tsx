@@ -1,15 +1,22 @@
-import { getTotals, getTotalsLast7Days, getDailyCounts } from "@/lib/admin-metrics"
+import {
+  getTotals,
+  getTotalsLast7Days,
+  getDailyCounts,
+  getCommitmentAdminRows,
+} from "@/lib/admin-metrics"
 import { AdminCharts } from "./admin-charts"
+import { TeamCommitmentsTable } from "./team-commitments-table"
 import { Card } from "@/components/ui/card"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminDashboardPage() {
-  const [totals, last7, checkInsByDay, signupsByDay] = await Promise.all([
+  const [totals, last7, checkInsByDay, signupsByDay, commitments] = await Promise.all([
     getTotals(),
     getTotalsLast7Days(),
     getDailyCounts({ model: "GripSession", days: 14 }),
     getDailyCounts({ model: "User", days: 14 }),
+    getCommitmentAdminRows(),
   ])
 
   return (
@@ -58,6 +65,16 @@ export default async function AdminDashboardPage() {
           </p>
         </Card>
       </div>
+
+      <section>
+        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          Team Commitments
+        </h2>
+        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+          One row per commitment, including owner, team, status, activity counts, and last activity.
+        </p>
+        <TeamCommitmentsTable rows={commitments} />
+      </section>
 
       <AdminCharts
         checkInsByDay={checkInsByDay}
