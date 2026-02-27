@@ -1,4 +1,4 @@
-import { requireAdmin, logoutAction } from "@/lib/admin-auth"
+import { requireAdmin, logoutAction } from "@/lib/admin-auth-server"
 import { Button } from "@/components/ui/button"
 
 export default async function AdminDashboardLayout({

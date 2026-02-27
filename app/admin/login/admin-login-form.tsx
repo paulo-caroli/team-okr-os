@@ -1,11 +1,15 @@
 "use client"
 
 import { useActionState } from "react"
-import { loginAction } from "@/lib/admin-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-export function AdminLoginForm() {
+type LoginAction = (
+  prevState: { error?: string } | null,
+  formData: FormData
+) => Promise<{ error?: string } | null>
+
+export function AdminLoginForm({ loginAction }: { loginAction: LoginAction }) {
   const [state, formAction] = useActionState(loginAction, null)
 
   return (

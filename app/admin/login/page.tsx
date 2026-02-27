@@ -1,4 +1,4 @@
-import { loginAction, isAdmin } from "@/lib/admin-auth"
+import { loginAction, isAdmin } from "@/lib/admin-auth-server"
 import { redirect } from "next/navigation"
 import { AdminLoginForm } from "./admin-login-form"
 
@@ -11,7 +11,7 @@ export default async function AdminLoginPage() {
         <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
           Admin login
         </h1>
-        <AdminLoginForm />
+        <AdminLoginForm loginAction={loginAction} />
       </div>
     </div>
   )
