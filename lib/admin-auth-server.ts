@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 import { createHmac } from "crypto"
 
 const COOKIE_NAME = "admin_session"
-const COOKIE_PATH = "/admin"
+const COOKIE_PATH = "/ops"
 
 function getAdminToken(): string | null {
   const secret = process.env.ADMIN_PASSWORD
@@ -23,7 +23,7 @@ export async function isAdmin(): Promise<boolean> {
 
 export async function requireAdmin() {
   const ok = await isAdmin()
-  if (!ok) redirect("/admin/login")
+  if (!ok) redirect("/ops/login")
 }
 
 export async function loginAction(
@@ -57,11 +57,11 @@ export async function loginAction(
     maxAge: 60 * 60 * 24 * 7, // 7 days
   })
 
-  redirect("/admin")
+  redirect("/ops")
 }
 
 export async function logoutAction() {
   const cookieStore = await cookies()
   cookieStore.delete(COOKIE_NAME)
-  redirect("/admin/login")
+  redirect("/ops/login")
 }

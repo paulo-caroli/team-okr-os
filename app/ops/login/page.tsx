@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { AdminLoginForm } from "./admin-login-form"
 
 export default async function AdminLoginPage() {
-  if (await isAdmin()) redirect("/admin")
+  if (await isAdmin()) redirect("/ops")
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
