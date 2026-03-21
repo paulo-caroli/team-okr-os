@@ -211,11 +211,11 @@ export function GripForm({
    */
   const confidenceValueRef = useRef<Confidence | null>(null)
   const [confidence, setConfidence] = useState<Confidence | null>(null)
+  const [clientError, setClientError] = useState<string | null>(null)
 
   function selectConfidence(value: Confidence) {
     confidenceValueRef.current = value
     setConfidence(value)
-    console.log("[GripForm] selectConfidence", { value })
   }
   const [localInitiatives, setLocalInitiatives] = useState<InitiativeView[]>(serverInitiatives)
   const [concludingInitiative, setConcludingInitiative] = useState<InitiativeView | null>(null)
@@ -230,10 +230,10 @@ export function GripForm({
   const hasInitiatives = activeInitiatives.length > 0
 
   useEffect(() => {
-    if (state?.error && errorBannerRef.current) {
+    if ((state?.error || clientError) && errorBannerRef.current) {
       errorBannerRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
     }
-  }, [state?.error])
+  }, [state?.error, clientError])
 
   function handleInitiativeCreated(raw: { id: string; name: string; hypothesis: string; expectedImpact: unknown; status: string; conclusionReason: string | null; conclusionImpact: string | null }) {
     const newInit: InitiativeView = {
@@ -256,28 +256,35 @@ export function GripForm({
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          const form = e.currentTarget
-          const fd = new FormData(form)
-          const fromRef = confidenceValueRef.current ?? ""
-          fd.set("confidence", fromRef)
-          console.log("[GripForm] submit confidence", {
-            formDataConfidence: fd.get("confidence"),
-            refValue: confidenceValueRef.current,
-            reactState: confidence,
-          })
-          formAction(fd)
+          setClientError(null)
+          try {
+            const form = e.currentTarget
+            const fd = new FormData(form)
+            fd.set("confidence", confidenceValueRef.current ?? "")
+            formAction(fd)
+          } catch (err) {
+            console.error("[GripForm] submit", err)
+            setClientError(
+              "Something went wrong, but your check-in may have been saved."
+            )
+          }
         }}
       >
         <input type="hidden" name="commitmentId" value={commitmentId} />
         <input type="hidden" name="teamId" value={teamId} />
 
-        {state?.error && (
-          <div
-            ref={errorBannerRef}
-            role="alert"
-            className="mb-8 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
-          >
-            {state.error}
+        {(state?.error || clientError) && (
+          <div ref={errorBannerRef} role="alert" className="mb-8 space-y-2">
+            {state?.error && (
+              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                {state.error}
+              </div>
+            )}
+            {clientError && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                {clientError}
+              </div>
+            )}
           </div>
         )}
 
@@ -290,14 +297,12 @@ export function GripForm({
                 type="date"
                 label="Date"
                 defaultValue={defaultDate}
-                required
               />
               <Input
                 name="occurredTime"
                 type="time"
                 label="Time"
                 defaultValue={defaultTime}
-                required
               />
             </div>
           </Card>
@@ -329,6 +334,11 @@ export function GripForm({
                   </button>
                 ))}
               </div>
+              {confidence === null && (
+                <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+                  No confidence selected — we&apos;ll assume Medium.
+                </p>
+              )}
 
               {showConfidencePrompt && (
                 <div className="mt-4">
@@ -394,7 +404,6 @@ export function GripForm({
                         label="Updated value"
                         defaultValue={String(primaryOutcome.current)}
                         placeholder="e.g., 68"
-                        required
                       />
                     </div>
                   </div>
@@ -434,7 +443,6 @@ export function GripForm({
                               defaultValue={String(signal.current)}
                               placeholder="Value"
                               className="h-8 w-28"
-                              required
                             />
                           </div>
                         </div>
@@ -454,7 +462,6 @@ export function GripForm({
                 name="resultsReflection"
                 label="What are we seeing in the Primary Outcome and Progress Indicators? What might be causing this movement (or lack of it)?"
                 placeholder="Interpret the data. What does it mean? What might be driving the movement?"
-                required
                 rows={4}
               />
             </div>
@@ -595,12 +602,18 @@ export function GripForm({
 
         {/* Submit */}
         <div className="mt-10 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-          {state?.error && (
-            <div
-              role="alert"
-              className="mb-4 md:hidden rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
-            >
-              {state.error}
+          {(state?.error || clientError) && (
+            <div className="mb-4 space-y-2 md:hidden" role="alert">
+              {state?.error && (
+                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                  {state.error}
+                </div>
+              )}
+              {clientError && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                  {clientError}
+                </div>
+              )}
             </div>
           )}
           <Button type="submit" size="lg" loading={isPending}>
