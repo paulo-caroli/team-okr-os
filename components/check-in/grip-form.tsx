@@ -205,16 +205,17 @@ export function GripForm({
 }: GripFormProps) {
   const [state, formAction, isPending] = useActionState(createCheckIn, null)
   const errorBannerRef = useRef<HTMLDivElement>(null)
-  /** Mirrors selection synchronously so the hidden input DOM value matches at submit (avoids controlled-input lag vs Server Action FormData). */
-  const confidenceHiddenRef = useRef<HTMLInputElement>(null)
+  /**
+   * Source of truth for submit: React Server Action form serialization can omit or
+   * stale-read hidden fields; we merge this ref into FormData in onSubmit (see below).
+   */
+  const confidenceValueRef = useRef<Confidence | null>(null)
   const [confidence, setConfidence] = useState<Confidence | null>(null)
 
   function selectConfidence(value: Confidence) {
+    confidenceValueRef.current = value
     setConfidence(value)
-    const el = confidenceHiddenRef.current
-    if (el) {
-      el.value = value
-    }
+    console.log("[GripForm] selectConfidence", { value })
   }
   const [localInitiatives, setLocalInitiatives] = useState<InitiativeView[]>(serverInitiatives)
   const [concludingInitiative, setConcludingInitiative] = useState<InitiativeView | null>(null)
@@ -253,15 +254,18 @@ export function GripForm({
   return (
     <>
       <form
-        action={formAction}
         onSubmit={(e) => {
-          const input = e.currentTarget.querySelector(
-            'input[name="confidence"]'
-          ) as HTMLInputElement | null
+          e.preventDefault()
+          const form = e.currentTarget
+          const fd = new FormData(form)
+          const fromRef = confidenceValueRef.current ?? ""
+          fd.set("confidence", fromRef)
           console.log("[GripForm] submit confidence", {
-            domValue: input?.value ?? null,
+            formDataConfidence: fd.get("confidence"),
+            refValue: confidenceValueRef.current,
             reactState: confidence,
           })
+          formAction(fd)
         }}
       >
         <input type="hidden" name="commitmentId" value={commitmentId} />
@@ -310,12 +314,6 @@ export function GripForm({
               Base this on what we&apos;ve learned so far, not on effort or activity.
             </p>
             <div className="mt-4">
-              <input
-                ref={confidenceHiddenRef}
-                type="hidden"
-                name="confidence"
-                defaultValue=""
-              />
               <div className="flex gap-2">
                 {CONFIDENCE_OPTIONS.map((opt) => (
                   <button
