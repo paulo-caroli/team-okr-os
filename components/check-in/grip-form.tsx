@@ -1,6 +1,13 @@
 "use client"
 
-import { useActionState, useState, useCallback, useEffect, useRef } from "react"
+import {
+  useActionState,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useTransition,
+} from "react"
 import { createCheckIn } from "@/lib/actions/check-in-actions"
 import { concludeInitiative } from "@/lib/actions/initiative-actions"
 import { InitiativeForm } from "@/components/initiative/initiative-form"
@@ -204,6 +211,7 @@ export function GripForm({
   initiatives: serverInitiatives,
 }: GripFormProps) {
   const [state, formAction, isPending] = useActionState(createCheckIn, null)
+  const [isSubmitting, startTransition] = useTransition()
   const errorBannerRef = useRef<HTMLDivElement>(null)
   /**
    * Source of truth for submit: React Server Action form serialization can omit or
@@ -257,17 +265,19 @@ export function GripForm({
         onSubmit={(e) => {
           e.preventDefault()
           setClientError(null)
-          try {
-            const form = e.currentTarget
-            const fd = new FormData(form)
-            fd.set("confidence", confidenceValueRef.current ?? "")
-            formAction(fd)
-          } catch (err) {
-            console.error("[GripForm] submit", err)
-            setClientError(
-              "Something went wrong, but your check-in may have been saved."
-            )
-          }
+          startTransition(() => {
+            try {
+              const form = e.currentTarget
+              const fd = new FormData(form)
+              fd.set("confidence", confidenceValueRef.current ?? "")
+              formAction(fd)
+            } catch (err) {
+              console.error("[GripForm] submit", err)
+              setClientError(
+                "Something went wrong, but your check-in may have been saved."
+              )
+            }
+          })
         }}
       >
         <input type="hidden" name="commitmentId" value={commitmentId} />
@@ -616,7 +626,12 @@ export function GripForm({
               )}
             </div>
           )}
-          <Button type="submit" size="lg" loading={isPending}>
+          {(isSubmitting || isPending) && (
+            <p className="mb-2 text-sm text-zinc-500 dark:text-zinc-400" aria-live="polite">
+              Saving check-in...
+            </p>
+          )}
+          <Button type="submit" size="lg" loading={isSubmitting || isPending}>
             Record Check-in
           </Button>
         </div>
