@@ -205,7 +205,17 @@ export function GripForm({
 }: GripFormProps) {
   const [state, formAction, isPending] = useActionState(createCheckIn, null)
   const errorBannerRef = useRef<HTMLDivElement>(null)
+  /** Mirrors selection synchronously so the hidden input DOM value matches at submit (avoids controlled-input lag vs Server Action FormData). */
+  const confidenceHiddenRef = useRef<HTMLInputElement>(null)
   const [confidence, setConfidence] = useState<Confidence | null>(null)
+
+  function selectConfidence(value: Confidence) {
+    setConfidence(value)
+    const el = confidenceHiddenRef.current
+    if (el) {
+      el.value = value
+    }
+  }
   const [localInitiatives, setLocalInitiatives] = useState<InitiativeView[]>(serverInitiatives)
   const [concludingInitiative, setConcludingInitiative] = useState<InitiativeView | null>(null)
   const [showAddInitiativeModal, setShowAddInitiativeModal] = useState(false)
@@ -242,7 +252,18 @@ export function GripForm({
 
   return (
     <>
-      <form action={formAction}>
+      <form
+        action={formAction}
+        onSubmit={(e) => {
+          const input = e.currentTarget.querySelector(
+            'input[name="confidence"]'
+          ) as HTMLInputElement | null
+          console.log("[GripForm] submit confidence", {
+            domValue: input?.value ?? null,
+            reactState: confidence,
+          })
+        }}
+      >
         <input type="hidden" name="commitmentId" value={commitmentId} />
         <input type="hidden" name="teamId" value={teamId} />
 
@@ -289,13 +310,18 @@ export function GripForm({
               Base this on what we&apos;ve learned so far, not on effort or activity.
             </p>
             <div className="mt-4">
-              <input type="hidden" name="confidence" value={confidence ?? ""} />
+              <input
+                ref={confidenceHiddenRef}
+                type="hidden"
+                name="confidence"
+                defaultValue=""
+              />
               <div className="flex gap-2">
                 {CONFIDENCE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => setConfidence(opt.value)}
+                    onClick={() => selectConfidence(opt.value)}
                     className={cn(
                       "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
                       confidence === opt.value ? opt.activeStyle : opt.style
