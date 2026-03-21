@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { createInitiative } from "@/lib/actions/initiative-actions"
 import type { SupportingSignal } from "@/lib/domain/commitment"
 import { Input } from "@/components/ui/input"
@@ -23,15 +24,22 @@ export function InitiativeForm({
   onSuccess,
   variant = "card",
 }: InitiativeFormProps) {
+  const router = useRouter()
   const [state, formAction, isPending] = useActionState(createInitiative, null)
   const [impactPrimary, setImpactPrimary] = useState(false)
   const [impactSignalIds, setImpactSignalIds] = useState<string[]>([])
 
   useEffect(() => {
     if (state && "success" in state && state.success) {
-      onSuccess?.(state.initiative ?? undefined)
+      router.refresh()
+      try {
+        onSuccess?.(state.initiative ?? undefined)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        console.error("[InitiativeForm] onSuccess error", { error: message })
+      }
     }
-  }, [state, onSuccess])
+  }, [state, onSuccess, router])
 
   function toggleSignal(signalId: string) {
     setImpactSignalIds((prev) =>

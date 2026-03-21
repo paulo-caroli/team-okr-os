@@ -19,6 +19,8 @@ export async function createCheckIn(
   const commitmentId = formData.get("commitmentId") as string
   const teamId = formData.get("teamId") as string
 
+  console.info("[createCheckIn] start", { teamId, commitmentId })
+
   const occurredDateStr = formData.get("occurredDate") as string
   const occurredTimeStr = formData.get("occurredTime") as string
   const confidence = formData.get("confidence") as Confidence
@@ -29,21 +31,36 @@ export async function createCheckIn(
   const issues = (formData.get("issues") as string)?.trim() || ""
   const planForward = (formData.get("planForward") as string)?.trim() || ""
 
-  if (!occurredDateStr) return { error: "Please select a check-in date." }
+  if (!occurredDateStr) {
+    console.info("[createCheckIn] validation_error", { code: "no_date", teamId, commitmentId })
+    return { error: "Please select a check-in date." }
+  }
   if (!confidence || !["HIGH", "MEDIUM", "LOW"].includes(confidence)) {
+    console.info("[createCheckIn] validation_error", { code: "confidence", teamId, commitmentId })
     return { error: "Please select a confidence level." }
   }
 
   const primaryOutcomeSnapshot = parseFloat(primaryOutcomeSnapshotStr)
   if (isNaN(primaryOutcomeSnapshot)) {
+    console.info("[createCheckIn] validation_error", { code: "primary_snapshot", teamId, commitmentId })
     return { error: "Primary Outcome current value must be a number." }
   }
 
-  if (!resultsReflection) return { error: "Please describe the current status of the Primary Outcome." }
+  if (!resultsReflection) {
+    console.info("[createCheckIn] validation_error", { code: "results_reflection", teamId, commitmentId })
+    return { error: "Please describe the current status of the Primary Outcome." }
+  }
 
   const occurredAt = occurredTimeStr
     ? new Date(`${occurredDateStr}T${occurredTimeStr}`)
     : new Date(occurredDateStr)
+
+  if (!Number.isFinite(occurredAt.getTime())) {
+    console.info("[createCheckIn] validation_error", { code: "invalid_datetime", teamId, commitmentId })
+    return {
+      error: "Invalid date or time. Please check the date and time fields.",
+    }
+  }
 
   // Build supporting signal snapshots from form data
   const signalSnapshots: Record<string, number> = {}
@@ -52,17 +69,21 @@ export async function createCheckIn(
   for (const signalId of signalIds) {
     const valueStr = (formData.get(`signal_${signalId}`) as string)?.trim()
     if (!valueStr) {
+      console.info("[createCheckIn] validation_error", { code: "signal_value", teamId, commitmentId })
       return { error: "All supporting signal values are required." }
     }
     const value = parseFloat(valueStr)
     if (isNaN(value)) {
+      console.info("[createCheckIn] validation_error", { code: "signal_nan", teamId, commitmentId })
       return { error: "All supporting signal values must be valid numbers." }
     }
     signalSnapshots[signalId] = value
   }
 
   // Create the GripSession and update current values in a transaction
-  const checkIn = await db.$transaction(async (tx) => {
+  let checkIn: Awaited<ReturnType<typeof db.gripSession.create>>
+  try {
+    checkIn = await db.$transaction(async (tx) => {
     // 1. Update PrimaryOutcome.current
     await tx.teamCommitment.update({
       where: { id: commitmentId },
@@ -94,14 +115,42 @@ export async function createCheckIn(
       },
     })
   })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[createCheckIn] transaction_failed", { teamId, commitmentId, error: message })
+    return { error: "Could not save this check-in. Please try again." }
+  }
 
-  trackEvent({
-    userId: session.user.id,
-    event: "checkin_created",
-    properties: { teamId, commitmentId, checkInId: checkIn.id, confidence },
+  console.info("[createCheckIn] transaction committed", {
+    teamId,
+    commitmentId,
+    checkInId: checkIn.id,
   })
 
-  revalidatePath(`/team/${teamId}`)
-  revalidatePath(`/team/${teamId}/commitment/${commitmentId}`)
+  try {
+    trackEvent({
+      userId: session.user.id,
+      event: "checkin_created",
+      properties: { teamId, commitmentId, checkInId: checkIn.id, confidence },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[createCheckIn] post-commit analytics failure", { error: message, checkInId: checkIn.id })
+  }
+
+  try {
+    revalidatePath(`/team/${teamId}`)
+    revalidatePath(`/team/${teamId}/commitment/${commitmentId}`)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[createCheckIn] post-commit revalidate failure", { error: message, checkInId: checkIn.id })
+  }
+
+  console.info("[createCheckIn] redirect", {
+    teamId,
+    commitmentId,
+    checkInId: checkIn.id,
+  })
+
   redirect(`/team/${teamId}/commitment/${commitmentId}/check-in/${checkIn.id}`)
 }

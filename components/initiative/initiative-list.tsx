@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import type { InitiativeView } from "@/lib/domain/initiative"
 import type { SupportingSignal } from "@/lib/domain/commitment"
 import { InitiativeCard } from "./initiative-card"
@@ -25,6 +25,9 @@ export function InitiativeList({
   readOnly = false,
 }: InitiativeListProps) {
   const [showForm, setShowForm] = useState(false)
+  const handleInitiativeFormSuccess = useCallback(() => {
+    setShowForm(false)
+  }, [])
 
   const active = initiatives.filter((i) => i.status === "ACTIVE")
   const concluded = initiatives.filter((i) => i.status === "CONCLUDED")
@@ -58,7 +61,7 @@ export function InitiativeList({
             commitmentId={commitmentId}
             teamId={teamId}
             signals={signals}
-            onSuccess={() => setShowForm(false)}
+            onSuccess={handleInitiativeFormSuccess}
           />
         </div>
       )}

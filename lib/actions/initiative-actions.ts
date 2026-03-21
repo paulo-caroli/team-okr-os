@@ -19,8 +19,16 @@ export async function createInitiative(
   const name = (formData.get("name") as string)?.trim()
   const hypothesis = (formData.get("hypothesis") as string)?.trim()
 
-  if (!name) return { error: "Initiative name is required." }
-  if (!hypothesis) return { error: "Please explain why you believe this initiative will influence the Primary Outcome." }
+  console.info("[createInitiative] start", { teamId, commitmentId })
+
+  if (!name) {
+    console.info("[createInitiative] validation_error", { code: "name", teamId, commitmentId })
+    return { error: "Initiative name is required." }
+  }
+  if (!hypothesis) {
+    console.info("[createInitiative] validation_error", { code: "hypothesis", teamId, commitmentId })
+    return { error: "Please explain why you believe this initiative will influence the Primary Outcome." }
+  }
 
   const impactPrimary = formData.get("impactPrimary") === "true"
   const impactSignalIdsRaw = (formData.get("impactSignalIds") as string)?.trim()
@@ -33,29 +41,51 @@ export async function createInitiative(
     ? { primary: impactPrimary, signalIds: impactSignalIds }
     : null
 
-  const initiative = await db.initiative.create({
-    data: {
+  try {
+    const initiative = await db.initiative.create({
+      data: {
+        commitmentId,
+        name,
+        hypothesis,
+        expectedImpact: expectedImpact ?? undefined,
+      },
+    })
+
+    try {
+      revalidatePath(`/team/${teamId}`)
+      revalidatePath(`/team/${teamId}/commitment/${commitmentId}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error("[createInitiative] revalidate failure", {
+        teamId,
+        commitmentId,
+        initiativeId: initiative.id,
+        error: message,
+      })
+    }
+
+    console.info("[createInitiative] success", {
+      teamId,
       commitmentId,
-      name,
-      hypothesis,
-      expectedImpact: expectedImpact ?? undefined,
-    },
-  })
+      initiativeId: initiative.id,
+    })
 
-  revalidatePath(`/team/${teamId}`)
-  revalidatePath(`/team/${teamId}/commitment/${commitmentId}`)
-
-  return {
-    success: true,
-    initiative: {
-      id: initiative.id,
-      name: initiative.name,
-      hypothesis: initiative.hypothesis,
-      expectedImpact: initiative.expectedImpact,
-      status: initiative.status,
-      conclusionReason: initiative.conclusionReason,
-      conclusionImpact: initiative.conclusionImpact,
-    },
+    return {
+      success: true,
+      initiative: {
+        id: initiative.id,
+        name: initiative.name,
+        hypothesis: initiative.hypothesis,
+        expectedImpact: initiative.expectedImpact,
+        status: initiative.status,
+        conclusionReason: initiative.conclusionReason,
+        conclusionImpact: initiative.conclusionImpact,
+      },
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[createInitiative] error", { teamId, commitmentId, error: message })
+    return { error: "Could not create initiative. Please try again." }
   }
 }
 

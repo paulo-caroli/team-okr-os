@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useState, useCallback, useEffect } from "react"
+import { useActionState, useState, useCallback, useEffect, useRef } from "react"
 import { createCheckIn } from "@/lib/actions/check-in-actions"
 import { concludeInitiative } from "@/lib/actions/initiative-actions"
 import { InitiativeForm } from "@/components/initiative/initiative-form"
@@ -204,6 +204,7 @@ export function GripForm({
   initiatives: serverInitiatives,
 }: GripFormProps) {
   const [state, formAction, isPending] = useActionState(createCheckIn, null)
+  const errorBannerRef = useRef<HTMLDivElement>(null)
   const [confidence, setConfidence] = useState<Confidence | null>(null)
   const [localInitiatives, setLocalInitiatives] = useState<InitiativeView[]>(serverInitiatives)
   const [concludingInitiative, setConcludingInitiative] = useState<InitiativeView | null>(null)
@@ -216,6 +217,12 @@ export function GripForm({
   const showConfidencePrompt = confidence === "MEDIUM" || confidence === "LOW"
   const activeInitiatives = localInitiatives.filter((i) => i.status === "ACTIVE")
   const hasInitiatives = activeInitiatives.length > 0
+
+  useEffect(() => {
+    if (state?.error && errorBannerRef.current) {
+      errorBannerRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [state?.error])
 
   function handleInitiativeCreated(raw: { id: string; name: string; hypothesis: string; expectedImpact: unknown; status: string; conclusionReason: string | null; conclusionImpact: string | null }) {
     const newInit: InitiativeView = {
@@ -240,7 +247,11 @@ export function GripForm({
         <input type="hidden" name="teamId" value={teamId} />
 
         {state?.error && (
-          <div className="mb-8 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+          <div
+            ref={errorBannerRef}
+            role="alert"
+            className="mb-8 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
+          >
             {state.error}
           </div>
         )}
@@ -560,6 +571,14 @@ export function GripForm({
 
         {/* Submit */}
         <div className="mt-10 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+          {state?.error && (
+            <div
+              role="alert"
+              className="mb-4 md:hidden rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
+            >
+              {state.error}
+            </div>
+          )}
           <Button type="submit" size="lg" loading={isPending}>
             Record Check-in
           </Button>
