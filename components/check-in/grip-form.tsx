@@ -29,6 +29,35 @@ interface GripFormProps {
   initiatives: InitiativeView[]
 }
 
+/** True when primary + all signals match stored currents and interpretation is empty. */
+function isNoMeaningfulChange(
+  fd: FormData,
+  primaryOutcome: PrimaryOutcome,
+  signals: SupportingSignal[]
+): boolean {
+  const primaryRaw = fd.get("primaryOutcomeSnapshot")
+  const primaryStr =
+    typeof primaryRaw === "string" ? primaryRaw.trim() : ""
+  const primaryEffective =
+    primaryStr === "" ? primaryOutcome.current : parseFloat(primaryStr)
+  if (!Number.isFinite(primaryEffective) || primaryEffective !== primaryOutcome.current) {
+    return false
+  }
+
+  for (const s of signals) {
+    const raw = fd.get(`signal_${s.id}`)
+    const vStr = typeof raw === "string" ? raw.trim() : ""
+    const vEffective = vStr === "" ? s.current : parseFloat(vStr)
+    if (!Number.isFinite(vEffective) || vEffective !== s.current) {
+      return false
+    }
+  }
+
+  const rrRaw = fd.get("resultsReflection")
+  const rr = typeof rrRaw === "string" ? rrRaw.trim() : ""
+  return rr === ""
+}
+
 const CONFIDENCE_OPTIONS: { value: Confidence; label: string; style: string; activeStyle: string }[] = [
   {
     value: "HIGH",
@@ -212,6 +241,9 @@ export function GripForm({
 }: GripFormProps) {
   const [state, formAction, isPending] = useActionState(createCheckIn, null)
   const [isSubmitting, startTransition] = useTransition()
+  const formRef = useRef<HTMLFormElement>(null)
+  const skipNoChangeConfirmRef = useRef(false)
+  const [showNoChangeConfirm, setShowNoChangeConfirm] = useState(false)
   const errorBannerRef = useRef<HTMLDivElement>(null)
   /**
    * Source of truth for submit: React Server Action form serialization can omit or
@@ -262,14 +294,27 @@ export function GripForm({
   return (
     <>
       <form
+        ref={formRef}
         onSubmit={(e) => {
           e.preventDefault()
           setClientError(null)
+          const form = e.currentTarget
+          const fd = new FormData(form)
+          fd.set("confidence", confidenceValueRef.current ?? "")
+
+          const bypassNoChangeDialog = skipNoChangeConfirmRef.current
+          skipNoChangeConfirmRef.current = false
+
+          if (
+            !bypassNoChangeDialog &&
+            isNoMeaningfulChange(fd, primaryOutcome, signals)
+          ) {
+            setShowNoChangeConfirm(true)
+            return
+          }
+
           startTransition(() => {
             try {
-              const form = e.currentTarget
-              const fd = new FormData(form)
-              fd.set("confidence", confidenceValueRef.current ?? "")
               formAction(fd)
             } catch (err) {
               console.error("[GripForm] submit", err)
@@ -346,7 +391,7 @@ export function GripForm({
               </div>
               {confidence === null && (
                 <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
-                  No confidence selected — we&apos;ll assume Medium.
+                  Select a confidence level to record your check-in.
                 </p>
               )}
 
@@ -631,11 +676,53 @@ export function GripForm({
               Saving check-in...
             </p>
           )}
-          <Button type="submit" size="lg" loading={isSubmitting || isPending}>
+          <Button
+            type="submit"
+            size="lg"
+            loading={isSubmitting || isPending}
+            disabled={confidence === null}
+          >
             Record Check-in
           </Button>
         </div>
       </form>
+
+      {showNoChangeConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="no-change-dialog-title"
+        >
+          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
+            <p
+              id="no-change-dialog-title"
+              className="text-sm text-zinc-700 dark:text-zinc-300"
+            >
+              Nothing changed. Do you still want to record this check-in?
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowNoChangeConfirm(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setShowNoChangeConfirm(false)
+                  skipNoChangeConfirmRef.current = true
+                  formRef.current?.requestSubmit()
+                }}
+              >
+                Save anyway
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Conclude Initiative Modal */}
       {concludingInitiative && (
