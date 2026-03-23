@@ -57,7 +57,7 @@ export function AbandonCommitmentModal({
           This will end the current commitment before the cycle is complete.
           <br />
           <br />
-          The Primary Outcome and target will remain locked.
+          Objective and key result definitions will remain locked as recorded.
           All GRIP history will be preserved.
         </p>
 

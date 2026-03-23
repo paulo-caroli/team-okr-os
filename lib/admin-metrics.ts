@@ -212,7 +212,7 @@ export interface CommitmentAdminRow {
  *
  * - User / Email: OWNER of the team (if any)
  * - Team Name: team.name
- * - Commitment title: primaryOutcomeStatement, falling back to primaryMetric
+ * - Commitment title: first objective title for this commitment
  * - Status: stored CommitmentStatus enum (ACTIVE / COMPLETED / ABANDONED)
  * - Number of check-ins: count of GripSession per commitment
  * - Number of initiatives: count of Initiative per commitment
@@ -241,7 +241,10 @@ export async function getCommitmentAdminRows(): Promise<CommitmentAdminRow[]> {
       u.name                          AS "ownerName",
       u.email                         AS "email",
       t.name                          AS "teamName",
-      COALESCE(c."primaryOutcomeStatement", c."primaryMetric") AS "commitmentTitle",
+      COALESCE(
+        (SELECT o.title FROM "Objective" o WHERE o."commitmentId" = c.id ORDER BY o."sortOrder" ASC LIMIT 1),
+        'Commitment'
+      ) AS "commitmentTitle",
       c.status                        AS "status",
       COUNT(DISTINCT gs.id)::bigint   AS "checkInCount",
       COUNT(DISTINCT i.id)::bigint    AS "initiativeCount",
@@ -264,8 +267,8 @@ export async function getCommitmentAdminRows(): Promise<CommitmentAdminRow[]> {
       u.name,
       u.email,
       t.name,
-      "commitmentTitle",
-      c.status
+      c.status,
+      c."createdAt"
     ORDER BY
       CASE WHEN c.status = 'ACTIVE' THEN 0 ELSE 1 END ASC,
       "lastActivityAt" ASC

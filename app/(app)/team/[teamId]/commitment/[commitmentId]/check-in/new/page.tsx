@@ -39,8 +39,7 @@ export default async function NewCheckInPage({
       <GripForm
         commitmentId={commitmentId}
         teamId={teamId}
-        primaryOutcome={commitment.primaryOutcome}
-        signals={commitment.supportingSignals}
+        objectives={commitment.objectives}
         initiatives={initiatives}
       />
     </div>

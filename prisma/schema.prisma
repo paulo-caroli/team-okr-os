@@ -81,13 +81,6 @@ model TeamCommitment {
   // Strategic Intent (embedded 1:1)
   strategicIntent String
 
-  // Primary Outcome (embedded 1:1)
-  primaryOutcomeStatement String?
-  primaryMetric           String
-  primaryBaseline         Float?
-  primaryTarget           Float
-  primaryCurrent          Float
-
   // Cycle (embedded 1:1)
   cycleLabel     String?
   cycleStartDate DateTime
@@ -103,9 +96,9 @@ model TeamCommitment {
   abandonmentReason String?
   abandonedAt       DateTime?
 
-  supportingSignals SupportingSignal[]
-  initiatives       Initiative[]
-  checkIns          GripSession[]
+  objectives  Objective[]
+  initiatives Initiative[]
+  checkIns    GripSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,20 +110,36 @@ enum CommitmentStatus {
   ABANDONED
 }
 
-// ─── Supporting Signals ────────────────────────────
+// ─── Team OKRs: Objectives & Key Results ───────────
 
-model SupportingSignal {
-  id           String         @id @default(cuid())
-  commitmentId String
-  commitment   TeamCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
-  statement    String?
-  metric       String
-  baseline     Float?
-  target       Float
-  current      Float
-  order        Int            @default(0)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+model Objective {
+  id            String         @id @default(cuid())
+  commitmentId  String
+  commitment    TeamCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  sortOrder     Int            @default(0)
+  keyResults    KeyResult[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([commitmentId])
+}
+
+model KeyResult {
+  id          String    @id @default(cuid())
+  objectiveId String
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  title       String
+  metric      String
+  baseline    Float?
+  target      Float
+  current     Float
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([objectiveId])
 }
 
 // ─── Initiatives ───────────────────────────────────
@@ -161,15 +170,14 @@ model GripSession {
   commitmentId String
   commitment   TeamCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
 
-  occurredAt                DateTime
-  confidence                Confidence
-  confidenceReason          String?
-  primaryOutcomeSnapshot    Float
-  resultsReflection         String
-  initiativeReflection      String?
-  issues                    String
-  planForward               String
-  supportingSignalSnapshots Json?
+  occurredAt           DateTime
+  confidence           Confidence
+  confidenceReason     String?
+  keyResultSnapshots   Json
+  resultsReflection    String
+  initiativeReflection String?
+  issues               String
+  planForward          String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

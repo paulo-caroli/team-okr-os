@@ -1,33 +1,38 @@
 import { db } from "@/lib/db"
-import type { CheckInView, SignalSnapshot } from "@/lib/domain/check-in"
+import type { CheckInView, KeyResultSnapshot } from "@/lib/domain/check-in"
 
-function parseSignalSnapshots(
-  raw: unknown,
-  commitmentId: string
-): SignalSnapshot[] {
-  if (!raw || typeof raw !== "object") return []
-  const entries = Object.entries(raw as Record<string, number>)
-  return entries.map(([signalId, value]) => ({
-    signalId,
-    metric: signalId,
-    value,
-  }))
+function parseKeyResultSnapshots(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== "object") return {}
+  const out: Record<string, number> = {}
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === "number" && Number.isFinite(v)) {
+      out[k] = v
+    } else if (typeof v === "string") {
+      const n = parseFloat(v)
+      if (Number.isFinite(n)) out[k] = n
+    }
+  }
+  return out
 }
 
-async function enrichSignalSnapshots(
-  snapshots: SignalSnapshot[]
-): Promise<SignalSnapshot[]> {
-  if (snapshots.length === 0) return []
+async function enrichKeyResultSnapshots(
+  snapshots: Record<string, number>
+): Promise<KeyResultSnapshot[]> {
+  const ids = Object.keys(snapshots)
+  if (ids.length === 0) return []
 
-  const signals = await db.supportingSignal.findMany({
-    where: { id: { in: snapshots.map((s) => s.signalId) } },
-    select: { id: true, metric: true },
+  const krs = await db.keyResult.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, title: true, metric: true },
   })
-  const metricMap = new Map(signals.map((s) => [s.id, s.metric]))
+  const labelMap = new Map(
+    krs.map((kr) => [kr.id, kr.title || kr.metric])
+  )
 
-  return snapshots.map((s) => ({
-    ...s,
-    metric: metricMap.get(s.signalId) ?? s.signalId,
+  return ids.map((keyResultId) => ({
+    keyResultId,
+    label: labelMap.get(keyResultId) ?? keyResultId,
+    value: snapshots[keyResultId]!,
   }))
 }
 
@@ -41,11 +46,8 @@ export async function getCheckIns(
 
   const views = await Promise.all(
     sessions.map(async (s) => {
-      const rawSnapshots = parseSignalSnapshots(
-        s.supportingSignalSnapshots,
-        s.commitmentId
-      )
-      const enriched = await enrichSignalSnapshots(rawSnapshots)
+      const parsed = parseKeyResultSnapshots(s.keyResultSnapshots)
+      const enriched = await enrichKeyResultSnapshots(parsed)
 
       return {
         id: s.id,
@@ -53,12 +55,11 @@ export async function getCheckIns(
         occurredAt: s.occurredAt,
         confidence: s.confidence,
         confidenceReason: s.confidenceReason,
-        primaryOutcomeSnapshot: s.primaryOutcomeSnapshot,
+        keyResultSnapshots: enriched,
         resultsReflection: s.resultsReflection,
         initiativeReflection: s.initiativeReflection,
         issues: s.issues,
         planForward: s.planForward,
-        supportingSignalSnapshots: enriched,
         createdAt: s.createdAt,
       } satisfies CheckInView
     })
@@ -76,11 +77,8 @@ export async function getCheckIn(
 
   if (!s) return null
 
-  const rawSnapshots = parseSignalSnapshots(
-    s.supportingSignalSnapshots,
-    s.commitmentId
-  )
-  const enriched = await enrichSignalSnapshots(rawSnapshots)
+  const parsed = parseKeyResultSnapshots(s.keyResultSnapshots)
+  const enriched = await enrichKeyResultSnapshots(parsed)
 
   return {
     id: s.id,
@@ -88,12 +86,11 @@ export async function getCheckIn(
     occurredAt: s.occurredAt,
     confidence: s.confidence,
     confidenceReason: s.confidenceReason,
-    primaryOutcomeSnapshot: s.primaryOutcomeSnapshot,
+    keyResultSnapshots: enriched,
     resultsReflection: s.resultsReflection,
     initiativeReflection: s.initiativeReflection,
     issues: s.issues,
     planForward: s.planForward,
-    supportingSignalSnapshots: enriched,
     createdAt: s.createdAt,
   }
 }

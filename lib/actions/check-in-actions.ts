@@ -43,29 +43,17 @@ export async function createCheckIn(
     occurredAt = new Date()
   }
 
-  const commitment = await db.teamCommitment.findUnique({
-    where: { id: commitmentId },
-    select: {
-      primaryCurrent: true,
-      supportingSignals: { select: { id: true, current: true } },
-    },
+  const keyResults = await db.keyResult.findMany({
+    where: { objective: { commitmentId } },
+    select: { id: true, current: true },
   })
 
-  if (!commitment) {
-    console.error("[createCheckIn] commitment_not_found", { commitmentId, teamId })
+  if (keyResults.length === 0) {
+    console.error("[createCheckIn] no_key_results", { commitmentId, teamId })
     return { error: "Could not save this check-in. Please try again." }
   }
 
-  const signalCurrentById = new Map(
-    commitment.supportingSignals.map((s) => [s.id, s.current])
-  )
-
-  const primaryRaw = formData.get("primaryOutcomeSnapshot")
-  const primaryStr = typeof primaryRaw === "string" ? primaryRaw.trim() : ""
-  const parsedPrimary = parseFloat(primaryStr)
-  const primaryOutcomeSnapshot = Number.isFinite(parsedPrimary)
-    ? parsedPrimary
-    : commitment.primaryCurrent
+  const currentById = new Map(keyResults.map((k) => [k.id, k.current]))
 
   const resultsReflection =
     (formData.get("resultsReflection") as string)?.trim() || "(Not provided)"
@@ -74,31 +62,26 @@ export async function createCheckIn(
   const issues = (formData.get("issues") as string)?.trim() || ""
   const planForward = (formData.get("planForward") as string)?.trim() || ""
 
-  const signalSnapshots: Record<string, number> = {}
-  const signalIds = formData.getAll("signalIds") as string[]
+  const snapshots: Record<string, number> = {}
+  const krIds = formData.getAll("keyResultIds") as string[]
 
-  for (const signalId of signalIds) {
-    const existingCurrent = signalCurrentById.get(signalId)
+  for (const krId of krIds) {
+    const existingCurrent = currentById.get(krId)
     if (existingCurrent === undefined) {
       continue
     }
-    const raw = formData.get(`signal_${signalId}`)
+    const raw = formData.get(`kr_${krId}`)
     const valueStr = typeof raw === "string" ? raw.trim() : ""
     const parsed = parseFloat(valueStr)
-    signalSnapshots[signalId] = Number.isFinite(parsed) ? parsed : existingCurrent
+    snapshots[krId] = Number.isFinite(parsed) ? parsed : existingCurrent
   }
 
   let checkIn: Awaited<ReturnType<typeof db.gripSession.create>>
   try {
     checkIn = await db.$transaction(async (tx) => {
-      await tx.teamCommitment.update({
-        where: { id: commitmentId },
-        data: { primaryCurrent: primaryOutcomeSnapshot },
-      })
-
-      for (const [signalId, value] of Object.entries(signalSnapshots)) {
-        await tx.supportingSignal.update({
-          where: { id: signalId },
+      for (const [krId, value] of Object.entries(snapshots)) {
+        await tx.keyResult.update({
+          where: { id: krId },
           data: { current: value },
         })
       }
@@ -109,13 +92,11 @@ export async function createCheckIn(
           occurredAt,
           confidence,
           confidenceReason,
-          primaryOutcomeSnapshot,
+          keyResultSnapshots: snapshots,
           resultsReflection,
           initiativeReflection,
           issues,
           planForward,
-          supportingSignalSnapshots:
-            Object.keys(signalSnapshots).length > 0 ? signalSnapshots : undefined,
         },
       })
     })

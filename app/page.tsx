@@ -20,8 +20,8 @@ export default async function LandingPage() {
             The Operating Discipline for Outcome-Driven Teams
           </p>
           <p className="mt-6 text-base leading-relaxed text-zinc-700 dark:text-zinc-300">
-            A focused system that helps teams commit to one measurable outcome
-            — and run disciplined impact cycles around it.
+            A focused system that helps teams commit to clear team objectives
+            and measurable key results — and run disciplined impact cycles around them.
           </p>
           <div className="mt-8">
             <Link
@@ -53,7 +53,7 @@ export default async function LandingPage() {
             for measurable outcomes.
           </p>
           <ul className="mt-6 space-y-3 text-zinc-700 dark:text-zinc-300">
-            <li>One Primary Outcome per cycle</li>
+            <li>Team objectives with key results (Team OKR model)</li>
             <li>Structured impact conversations (GRIP)</li>
             <li>Learning captured across commitment cycles</li>
           </ul>

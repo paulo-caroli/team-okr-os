@@ -44,17 +44,29 @@ export function CheckInDetail({ checkIn }: CheckInDetailProps) {
       <div>
         <SectionHeader title="R — Results Progress" className="mb-3" />
         <Card className="space-y-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-              Primary Outcome
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-              {checkIn.primaryOutcomeSnapshot}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Value recorded at time of check-in
-            </p>
-          </div>
+          {checkIn.keyResultSnapshots.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                Key result snapshots
+              </p>
+              <ul className="mt-2 space-y-2">
+                {checkIn.keyResultSnapshots.map((s) => (
+                  <li
+                    key={s.keyResultId}
+                    className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2 dark:border-zinc-800"
+                  >
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">{s.label}</span>
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {s.value}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                Values recorded at time of check-in
+              </p>
+            </div>
+          )}
           <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
               {checkIn.resultsReflection}
@@ -62,26 +74,6 @@ export function CheckInDetail({ checkIn }: CheckInDetailProps) {
           </div>
         </Card>
       </div>
-
-      {checkIn.supportingSignalSnapshots.length > 0 && (
-        <div>
-          <SectionHeader title="Supporting Signal Snapshots" className="mb-3" />
-          <div className="space-y-2">
-            {checkIn.supportingSignalSnapshots.map((snapshot) => (
-              <Card key={snapshot.signalId} className="py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                    {snapshot.metric}
-                  </span>
-                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {snapshot.value}
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
 
       {checkIn.initiativeReflection && (
         <div>

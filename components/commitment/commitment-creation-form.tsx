@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import { useActionState, useState, useMemo } from "react"
 import { createCommitment } from "@/lib/actions/commitment-actions"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -11,52 +11,69 @@ import type { CommitmentPrefill } from "@/app/(app)/team/[teamId]/commitment/new
 
 const STRATEGIC_CONTEXT_PLACEHOLDER = "e.g. Premium category revenue must grow 40% this year."
 
+const MAX_OBJECTIVES = 8
+const MAX_KR = 8
+
 interface CommitmentCreationFormProps {
   teamId: string
   prefill?: CommitmentPrefill | null
 }
 
+function buildInitialKrCounts(prefill: CommitmentPrefill | null | undefined): Record<number, number> {
+  if (!prefill?.objectives.length) {
+    return { 0: 2 }
+  }
+  const m: Record<number, number> = {}
+  prefill.objectives.forEach((o, i) => {
+    m[i] = Math.max(o.keyResults.length, 2)
+  })
+  return m
+}
+
 export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFormProps) {
   const [state, formAction, isPending] = useActionState(createCommitment, null)
 
-  const prefillSignalCount = prefill?.signals.length ?? 0
-  const [signalCount, setSignalCount] = useState(prefillSignalCount)
-
-  const [primaryCurrent, setPrimaryCurrent] = useState(
-    prefill ? String(prefill.primaryCurrent) : ""
+  const initialObjectiveCount = prefill?.objectives.length ?? 1
+  const [objectiveCount, setObjectiveCount] = useState(initialObjectiveCount)
+  const [krCounts, setKrCounts] = useState<Record<number, number>>(() =>
+    buildInitialKrCounts(prefill)
   )
-  const [primaryCurrentTouched, setPrimaryCurrentTouched] = useState(!!prefill)
 
-  const [signalCurrents, setSignalCurrents] = useState<Record<number, string>>(() => {
+  const [krCurrents, setKrCurrents] = useState<Record<string, string>>(() => {
     if (!prefill) return {}
-    const init: Record<number, string> = {}
-    prefill.signals.forEach((s, i) => {
-      init[i] = String(s.current)
+    const init: Record<string, string> = {}
+    prefill.objectives.forEach((o, oi) => {
+      o.keyResults.forEach((kr, ki) => {
+        init[`${oi}_${ki}`] = String(kr.current)
+      })
     })
     return init
   })
-  const [signalCurrentsTouched, setSignalCurrentsTouched] = useState<Record<number, boolean>>(() => {
+  const [krTouched, setKrTouched] = useState<Record<string, boolean>>(() => {
     if (!prefill) return {}
-    const init: Record<number, boolean> = {}
-    prefill.signals.forEach((_, i) => {
-      init[i] = true
+    const init: Record<string, boolean> = {}
+    prefill.objectives.forEach((o, oi) => {
+      o.keyResults.forEach((_, ki) => {
+        init[`${oi}_${ki}`] = true
+      })
     })
     return init
   })
 
   const [copyInitiatives, setCopyInitiatives] = useState(false)
 
-  function handlePrimaryBaselineBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const baseline = e.target.value.trim()
-    if (baseline && !primaryCurrentTouched && !primaryCurrent) {
-      setPrimaryCurrent(baseline)
+  const defaultKrForSlot = useMemo(() => {
+    return (oi: number, ki: number) => {
+      const kr = prefill?.objectives[oi]?.keyResults[ki]
+      return kr ?? null
     }
-  }
+  }, [prefill])
 
-  function handleSignalBaselineBlur(index: number, e: React.FocusEvent<HTMLInputElement>) {
+  function handleKrBaselineBlur(oi: number, ki: number, e: React.FocusEvent<HTMLInputElement>) {
     const baseline = e.target.value.trim()
-    if (baseline && !signalCurrentsTouched[index] && !signalCurrents[index]) {
-      setSignalCurrents((prev) => ({ ...prev, [index]: baseline }))
+    const key = `${oi}_${ki}`
+    if (baseline && !krTouched[key] && !krCurrents[key]) {
+      setKrCurrents((prev) => ({ ...prev, [key]: baseline }))
     }
   }
 
@@ -70,19 +87,17 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
         </div>
       )}
 
-      {/* Clone banner */}
       {prefill && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-5 py-4 dark:border-blue-800/50 dark:bg-blue-900/10">
           <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
             You are creating a new commitment based on a previous one.
           </p>
           <p className="mt-1 text-sm text-blue-600 dark:text-blue-400">
-            Previous cycle ended with current value: {prefill.previousCurrentValue}
+            Team objectives and key results are pre-filled from the last cycle — adjust as needed.
           </p>
         </div>
       )}
 
-      {/* Strategic Context */}
       <div>
         <SectionHeader
           title="Strategic Context"
@@ -101,73 +116,197 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
         </Card>
       </div>
 
-      {/* Primary Outcome — visually dominant */}
       <div className="mt-14">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            Primary Outcome
-          </h2>
-          <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
-            The one measurable result your team commits to move, within a time-bounded cycle.
-          </p>
-        </div>
-        <div className="rounded-lg border border-zinc-300 p-6 dark:border-zinc-600">
-          <div className="space-y-4">
-            <Textarea
-              name="primaryOutcomeStatement"
-              label="Outcome Statement"
-              placeholder="e.g. Increase premium checkout conversion rate from 5% to 12% by Q1."
-              hint="Describe the result your team commits to move in this cycle. Keep it clear and directional."
-              rows={2}
-              defaultValue={prefill?.primaryOutcomeStatement ?? undefined}
-            />
-            <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
-              <Input
-                name="primaryMetric"
-                label="Metric Name"
-                placeholder="e.g. Premium checkout conversion rate (%)"
-                hint="The specific metric that proves this outcome is improving."
-                required
-                defaultValue={prefill?.primaryMetric}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <Input
-                name="primaryBaseline"
-                type="number"
-                step="any"
-                label="Baseline (optional)"
-                placeholder="e.g. 5"
-                onBlur={handlePrimaryBaselineBlur}
-                defaultValue={prefill?.primaryBaseline != null ? String(prefill.primaryBaseline) : undefined}
-              />
-              <Input
-                name="primaryTarget"
-                type="number"
-                step="any"
-                label="Target"
-                placeholder="e.g. 12"
-                required
-              />
-              <Input
-                name="primaryCurrent"
-                type="number"
-                step="any"
-                label="Current value"
-                placeholder="e.g. 5"
-                required
-                value={primaryCurrent}
-                onChange={(e) => {
-                  setPrimaryCurrent(e.target.value)
-                  setPrimaryCurrentTouched(true)
+        <SectionHeader
+          title="Team OKRs"
+          description="Define team objectives and measurable key results. Most teams do best with 1–2 objectives and 2–4 key results each."
+          className="mb-4"
+          action={
+            objectiveCount < MAX_OBJECTIVES ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const next = objectiveCount
+                  setObjectiveCount((c) => c + 1)
+                  setKrCounts((prev) => ({ ...prev, [next]: 2 }))
                 }}
-              />
-            </div>
-          </div>
+              >
+                + Add Team Objective
+              </Button>
+            ) : null
+          }
+        />
+        {objectiveCount > 2 && (
+          <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+            Most teams perform best with 1–2 objectives.
+          </p>
+        )}
+
+        <div className="space-y-8">
+          {Array.from({ length: objectiveCount }).map((_, oi) => {
+            const prefillObj = prefill?.objectives[oi]
+            const krSlotCount = krCounts[oi] ?? 2
+            return (
+              <Card key={oi} className="space-y-4 p-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                    Objective {oi + 1}
+                  </span>
+                  {objectiveCount > 1 && oi === objectiveCount - 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setObjectiveCount((c) => {
+                          const last = c - 1
+                          setKrCounts((prev) => {
+                            const next = { ...prev }
+                            delete next[last]
+                            return next
+                          })
+                          return Math.max(1, c - 1)
+                        })
+                      }}
+                    >
+                      Remove this objective
+                    </Button>
+                  )}
+                </div>
+
+                <Textarea
+                  name={`obj_${oi}_title`}
+                  label="Team Objective"
+                  placeholder="A clear and specific outcome the team commits to achieving this cycle."
+                  hint="A clear and specific outcome the team commits to achieving this cycle."
+                  required
+                  rows={2}
+                  defaultValue={prefillObj?.title}
+                />
+                <Textarea
+                  name={`obj_${oi}_description`}
+                  label="Details (optional)"
+                  rows={2}
+                  placeholder="Optional context for this objective..."
+                  defaultValue={prefillObj?.description ?? undefined}
+                />
+
+                <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Key Results</p>
+                      <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                        Measurable outcomes that show real progress toward the objective.
+                      </p>
+                    </div>
+                    {krSlotCount < MAX_KR && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setKrCounts((prev) => ({
+                            ...prev,
+                            [oi]: (prev[oi] ?? 2) + 1,
+                          }))
+                        }
+                      >
+                        + Add Key Result
+                      </Button>
+                    )}
+                  </div>
+
+                  {krSlotCount === 0 ? (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      No key results yet. Add 2–4 key results to measure progress.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {Array.from({ length: krSlotCount }).map((__, ki) => {
+                        const slotKr = defaultKrForSlot(oi, ki)
+                        const ck = `${oi}_${ki}`
+                        return (
+                          <div
+                            key={ki}
+                            className="rounded-lg border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/20"
+                          >
+                            <div className="mb-2 flex items-center justify-between">
+                              <span className="text-xs text-zinc-400">Key result {ki + 1}</span>
+                              {krSlotCount > 1 && ki === krSlotCount - 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setKrCounts((prev) => ({
+                                      ...prev,
+                                      [oi]: Math.max(1, (prev[oi] ?? 2) - 1),
+                                    }))
+                                  }
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                            <Input
+                              name={`obj_${oi}_kr_${ki}_title`}
+                              label="Title"
+                              placeholder="Short name"
+                              defaultValue={slotKr?.title}
+                            />
+                            <Input
+                              name={`obj_${oi}_kr_${ki}_metric`}
+                              label="Metric"
+                              placeholder="What you measure"
+                              required
+                              defaultValue={slotKr?.metric}
+                            />
+                            <div className="grid grid-cols-3 gap-3">
+                              <Input
+                                name={`obj_${oi}_kr_${ki}_baseline`}
+                                type="number"
+                                step="any"
+                                label="Baseline (optional)"
+                                onBlur={(e) => handleKrBaselineBlur(oi, ki, e)}
+                                defaultValue={
+                                  slotKr?.baseline != null ? String(slotKr.baseline) : undefined
+                                }
+                              />
+                              <Input
+                                name={`obj_${oi}_kr_${ki}_target`}
+                                type="number"
+                                step="any"
+                                label="Target"
+                                required
+                                defaultValue={slotKr?.target != null ? String(slotKr.target) : undefined}
+                              />
+                              <Input
+                                name={`obj_${oi}_kr_${ki}_current`}
+                                type="number"
+                                step="any"
+                                label="Current"
+                                required
+                                value={krCurrents[ck] ?? ""}
+                                onChange={(e) => {
+                                  setKrCurrents((p) => ({ ...p, [ck]: e.target.value }))
+                                  setKrTouched((p) => ({ ...p, [ck]: true }))
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )
+          })}
         </div>
       </div>
 
-      {/* Cycle */}
       <div>
         <SectionHeader
           title="Cycle"
@@ -181,119 +320,12 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
             placeholder="e.g., Q1 2026, Sprint 4, 6-Week Cycle"
           />
           <div className="mt-4 grid grid-cols-2 gap-4">
-            <Input
-              name="cycleStartDate"
-              type="date"
-              label="Start date"
-              required
-            />
-            <Input
-              name="cycleEndDate"
-              type="date"
-              label="End date"
-              required
-            />
+            <Input name="cycleStartDate" type="date" label="Start date" required />
+            <Input name="cycleEndDate" type="date" label="End date" required />
           </div>
         </Card>
       </div>
 
-      {/* Supporting Signals */}
-      <div className="mt-14 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-        <SectionHeader
-          title="Progress Indicators"
-          description="Measurable signals of progress toward the Primary Outcome."
-          className="mb-4"
-          action={
-            signalCount < 5 ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSignalCount((c) => Math.min(c + 1, 5))}
-              >
-                + Add indicator
-              </Button>
-            ) : null
-          }
-        />
-        <p className="mb-4 text-xs text-zinc-400 dark:text-zinc-500">
-          These must reflect measurable progress toward the Primary Outcome — not activities or deliverables.
-        </p>
-        {signalCount > 0 && (
-          <div className="space-y-3">
-            {Array.from({ length: signalCount }).map((_, i) => {
-              const prefillSignal = prefill?.signals[i]
-              return (
-                <Card key={i} className="space-y-3 py-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-400">
-                      Indicator {i + 1}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSignalCount((c) => c - 1)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  <Textarea
-                    name={`signal_${i}_statement`}
-                    label="Indicator Statement"
-                    placeholder="e.g. Reduce checkout drop-off between shipping and payment."
-                    hint="Describe the measurable change that indicates progress toward the Primary Outcome."
-                    rows={2}
-                    defaultValue={prefillSignal?.statement ?? undefined}
-                  />
-                  <Input
-                    name={`signal_${i}_metric`}
-                    label="Metric Name"
-                    placeholder="e.g. Checkout step drop-off rate (%)"
-                    hint="The measurable indicator that proves this signal is improving."
-                    required
-                    defaultValue={prefillSignal?.metric}
-                  />
-                  <div className="grid grid-cols-3 gap-4">
-                    <Input
-                      name={`signal_${i}_baseline`}
-                      type="number"
-                      step="any"
-                      label="Baseline (optional)"
-                      placeholder="e.g. 45"
-                      onBlur={(e) => handleSignalBaselineBlur(i, e)}
-                      defaultValue={prefillSignal?.baseline != null ? String(prefillSignal.baseline) : undefined}
-                    />
-                    <Input
-                      name={`signal_${i}_target`}
-                      type="number"
-                      step="any"
-                      label="Target"
-                      placeholder="e.g. 30"
-                      required
-                    />
-                    <Input
-                      name={`signal_${i}_current`}
-                      type="number"
-                      step="any"
-                      label="Current value"
-                      placeholder="e.g. 45"
-                      required
-                      value={signalCurrents[i] ?? ""}
-                      onChange={(e) => {
-                        setSignalCurrents((prev) => ({ ...prev, [i]: e.target.value }))
-                        setSignalCurrentsTouched((prev) => ({ ...prev, [i]: true }))
-                      }}
-                    />
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Copy previous initiatives */}
       {prefill && prefill.initiatives.length > 0 && (
         <div>
           <SectionHeader
@@ -325,12 +357,8 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
               <div className="space-y-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
                 {prefill.initiatives.map((init, i) => (
                   <div key={i} className="rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50">
-                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                      {init.name}
-                    </p>
-                    <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-                      {init.hypothesis}
-                    </p>
+                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{init.name}</p>
+                    <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">{init.hypothesis}</p>
                     <input type="hidden" name={`initiative_${i}_name`} value={init.name} />
                     <input type="hidden" name={`initiative_${i}_hypothesis`} value={init.hypothesis} />
                   </div>
@@ -341,18 +369,18 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
         </div>
       )}
 
-      {/* Submit */}
       <div className="border-t border-zinc-200 pt-8 dark:border-zinc-800">
         <div className="flex items-center gap-4">
           <Button type="submit" size="lg" loading={isPending}>
             Create commitment
           </Button>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            This creates an explicit team commitment to a measurable outcome.
+            This creates an explicit team commitment to measurable outcomes.
           </p>
         </div>
         <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
-          This will activate the commitment immediately. The Primary Outcome cannot be edited after activation.
+          This activates the commitment immediately. Objective wording and key result definitions are fixed
+          after activation (you can still update current values during the cycle).
         </p>
       </div>
     </form>

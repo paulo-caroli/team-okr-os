@@ -2,7 +2,7 @@
 
 import { useState, useActionState, useEffect } from "react"
 import type { InitiativeView } from "@/lib/domain/initiative"
-import type { SupportingSignal } from "@/lib/domain/commitment"
+import type { KeyResult } from "@/lib/domain/commitment"
 import { concludeInitiative, reactivateInitiative, deleteInitiative } from "@/lib/actions/initiative-actions"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 interface InitiativeCardProps {
   initiative: InitiativeView
   teamId: string
-  signals: SupportingSignal[]
+  keyResults: KeyResult[]
   readOnly?: boolean
 }
 
@@ -24,7 +24,7 @@ function truncateToLines(text: string, maxLines: number): string {
   return result
 }
 
-export function InitiativeCard({ initiative, teamId, signals, readOnly = false }: InitiativeCardProps) {
+export function InitiativeCard({ initiative, teamId, keyResults, readOnly = false }: InitiativeCardProps) {
   const [showConcludeModal, setShowConcludeModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [reactivating, setReactivating] = useState(false)
@@ -37,7 +37,7 @@ export function InitiativeCard({ initiative, teamId, signals, readOnly = false }
     }
   }, [concludeState])
 
-  const signalMap = new Map(signals.map((s) => [s.id, s.statement || s.metric]))
+  const krLabelMap = new Map(keyResults.map((kr) => [kr.id, kr.title || kr.metric]))
   const beliefSummary = truncateToLines(initiative.hypothesis, 2)
 
   async function handleReactivate() {
@@ -69,19 +69,14 @@ export function InitiativeCard({ initiative, teamId, signals, readOnly = false }
             {beliefSummary}
           </p>
 
-          {initiative.expectedImpact && (
+          {initiative.expectedImpact && initiative.expectedImpact.keyResultIds.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {initiative.expectedImpact.primary && (
-                <span className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                  → Primary Outcome
-                </span>
-              )}
-              {initiative.expectedImpact.signalIds.map((signalId) => (
+              {initiative.expectedImpact.keyResultIds.map((id) => (
                 <span
-                  key={signalId}
+                  key={id}
                   className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
                 >
-                  → {signalMap.get(signalId) || "Signal"}
+                  → {krLabelMap.get(id) || "Key result"}
                 </span>
               ))}
             </div>
@@ -165,7 +160,7 @@ export function InitiativeCard({ initiative, teamId, signals, readOnly = false }
 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Did it influence the Primary Outcome as expected?
+                  Did it influence your key results as expected?
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {["Yes", "Partially", "No", "Too early to tell"].map((opt) => (

@@ -1,13 +1,20 @@
 import { db } from "@/lib/db"
 import { toCommitmentView, type CommitmentView } from "@/lib/domain/commitment"
 
+const objectiveInclude = {
+  orderBy: { sortOrder: "asc" as const },
+  include: {
+    keyResults: { orderBy: { sortOrder: "asc" as const } },
+  },
+}
+
 export async function getActiveCommitment(
   teamId: string
 ): Promise<CommitmentView | null> {
   const commitment = await db.teamCommitment.findFirst({
     where: { teamId, status: "ACTIVE" },
     include: {
-      supportingSignals: { orderBy: { order: "asc" } },
+      objectives: objectiveInclude,
       _count: { select: { initiatives: true, checkIns: true } },
     },
   })
@@ -22,7 +29,7 @@ export async function getCommitment(
   const commitment = await db.teamCommitment.findUnique({
     where: { id: commitmentId },
     include: {
-      supportingSignals: { orderBy: { order: "asc" } },
+      objectives: objectiveInclude,
       _count: { select: { initiatives: true, checkIns: true } },
     },
   })
@@ -37,7 +44,7 @@ export async function getCommitmentHistory(
   const commitments = await db.teamCommitment.findMany({
     where: { teamId, status: { not: "ACTIVE" } },
     include: {
-      supportingSignals: { orderBy: { order: "asc" } },
+      objectives: objectiveInclude,
       _count: { select: { initiatives: true, checkIns: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -52,7 +59,7 @@ export async function getLastAbandonedCommitment(
   const commitment = await db.teamCommitment.findFirst({
     where: { teamId, status: "ABANDONED" },
     include: {
-      supportingSignals: { orderBy: { order: "asc" } },
+      objectives: objectiveInclude,
       _count: { select: { initiatives: true, checkIns: true } },
     },
     orderBy: { abandonedAt: "desc" },
@@ -68,7 +75,7 @@ export async function getLastInactiveCommitment(
   const commitment = await db.teamCommitment.findFirst({
     where: { teamId, status: { not: "ACTIVE" } },
     include: {
-      supportingSignals: { orderBy: { order: "asc" } },
+      objectives: objectiveInclude,
       _count: { select: { initiatives: true, checkIns: true } },
     },
     orderBy: { updatedAt: "desc" },

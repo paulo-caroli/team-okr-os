@@ -1,8 +1,7 @@
 export type InitiativeStatus = "ACTIVE" | "CONCLUDED"
 
 export interface ExpectedImpact {
-  primary: boolean
-  signalIds: string[]
+  keyResultIds: string[]
 }
 
 export interface InitiativeView {

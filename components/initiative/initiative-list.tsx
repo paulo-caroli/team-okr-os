@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import type { InitiativeView } from "@/lib/domain/initiative"
-import type { SupportingSignal } from "@/lib/domain/commitment"
+import type { KeyResult } from "@/lib/domain/commitment"
 import { InitiativeCard } from "./initiative-card"
 import { InitiativeForm } from "./initiative-form"
 import { SectionHeader } from "@/components/ui/section-header"
@@ -13,7 +13,7 @@ interface InitiativeListProps {
   initiatives: InitiativeView[]
   commitmentId: string
   teamId: string
-  signals: SupportingSignal[]
+  keyResults: KeyResult[]
   readOnly?: boolean
 }
 
@@ -21,7 +21,7 @@ export function InitiativeList({
   initiatives,
   commitmentId,
   teamId,
-  signals,
+  keyResults,
   readOnly = false,
 }: InitiativeListProps) {
   const [showForm, setShowForm] = useState(false)
@@ -51,7 +51,7 @@ export function InitiativeList({
         }
       />
       <p className="mb-4 text-xs text-zinc-400 dark:text-zinc-500">
-        Team Initiatives are the actions the team believes will influence the Primary Outcome.
+        Team Initiatives are actions the team believes will influence key results.
         They are not projects or deliverables.
       </p>
 
@@ -60,7 +60,7 @@ export function InitiativeList({
           <InitiativeForm
             commitmentId={commitmentId}
             teamId={teamId}
-            signals={signals}
+            keyResults={keyResults}
             onSuccess={handleInitiativeFormSuccess}
           />
         </div>
@@ -74,7 +74,7 @@ export function InitiativeList({
         ) : (
           !showForm && (
             <EmptyState
-              title="What action might influence the Primary Outcome?"
+              title="What action might influence your key results?"
               action={
                 <Button size="sm" onClick={() => setShowForm(true)}>
                   + Add Team Initiative
@@ -86,13 +86,13 @@ export function InitiativeList({
       ) : (
         <div className="space-y-2">
           {active.map((i) => (
-            <InitiativeCard key={i.id} initiative={i} teamId={teamId} signals={signals} readOnly={readOnly} />
+            <InitiativeCard key={i.id} initiative={i} teamId={teamId} keyResults={keyResults} readOnly={readOnly} />
           ))}
           {concluded.length > 0 && active.length > 0 && (
             <div className="border-t border-zinc-100 pt-2 dark:border-zinc-800" />
           )}
           {concluded.map((i) => (
-            <InitiativeCard key={i.id} initiative={i} teamId={teamId} signals={signals} readOnly={readOnly} />
+            <InitiativeCard key={i.id} initiative={i} teamId={teamId} keyResults={keyResults} readOnly={readOnly} />
           ))}
         </div>
       )}

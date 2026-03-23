@@ -17,38 +17,25 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { Confidence } from "@/lib/domain/check-in"
-import type { SupportingSignal, PrimaryOutcome } from "@/lib/domain/commitment"
+import type { ObjectiveView, KeyResult } from "@/lib/domain/commitment"
+import { flatKeyResults } from "@/lib/domain/commitment"
 import type { InitiativeView, ExpectedImpact } from "@/lib/domain/initiative"
 import { cn } from "@/lib/utils"
 
 interface GripFormProps {
   commitmentId: string
   teamId: string
-  primaryOutcome: PrimaryOutcome
-  signals: SupportingSignal[]
+  objectives: ObjectiveView[]
   initiatives: InitiativeView[]
 }
 
-/** True when primary + all signals match stored currents and interpretation is empty. */
-function isNoMeaningfulChange(
-  fd: FormData,
-  primaryOutcome: PrimaryOutcome,
-  signals: SupportingSignal[]
-): boolean {
-  const primaryRaw = fd.get("primaryOutcomeSnapshot")
-  const primaryStr =
-    typeof primaryRaw === "string" ? primaryRaw.trim() : ""
-  const primaryEffective =
-    primaryStr === "" ? primaryOutcome.current : parseFloat(primaryStr)
-  if (!Number.isFinite(primaryEffective) || primaryEffective !== primaryOutcome.current) {
-    return false
-  }
-
-  for (const s of signals) {
-    const raw = fd.get(`signal_${s.id}`)
+/** True when all key results match stored currents and interpretation is empty. */
+function isNoMeaningfulChange(fd: FormData, keyResults: KeyResult[]): boolean {
+  for (const kr of keyResults) {
+    const raw = fd.get(`kr_${kr.id}`)
     const vStr = typeof raw === "string" ? raw.trim() : ""
-    const vEffective = vStr === "" ? s.current : parseFloat(vStr)
-    if (!Number.isFinite(vEffective) || vEffective !== s.current) {
+    const vEffective = vStr === "" ? kr.current : parseFloat(vStr)
+    if (!Number.isFinite(vEffective) || vEffective !== kr.current) {
       return false
     }
   }
@@ -143,7 +130,7 @@ function ConcludeInitiativeModal({
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Did it influence the Primary Outcome as expected?
+              Did it influence your team objectives as expected?
             </p>
             <div className="flex flex-wrap gap-2">
               {["Yes", "Partially", "No", "Too early to tell"].map((opt) => (
@@ -178,13 +165,13 @@ function ConcludeInitiativeModal({
 function AddInitiativeModal({
   commitmentId,
   teamId,
-  signals,
+  keyResults,
   onClose,
   onCreated,
 }: {
   commitmentId: string
   teamId: string
-  signals: SupportingSignal[]
+  keyResults: KeyResult[]
   onClose: () => void
   onCreated: (initiative: { id: string; name: string; hypothesis: string; expectedImpact: unknown; status: string; conclusionReason: string | null; conclusionImpact: string | null }) => void
 }) {
@@ -213,7 +200,7 @@ function AddInitiativeModal({
         <InitiativeForm
           commitmentId={commitmentId}
           teamId={teamId}
-          signals={signals}
+          keyResults={keyResults}
           onSuccess={handleSuccess}
           variant="plain"
         />
@@ -225,20 +212,19 @@ function AddInitiativeModal({
 function parseExpectedImpact(raw: unknown): ExpectedImpact | null {
   if (!raw || typeof raw !== "object") return null
   const obj = raw as Record<string, unknown>
-  if (typeof obj.primary !== "boolean") return null
+  if (!Array.isArray(obj.keyResultIds)) return null
   return {
-    primary: obj.primary,
-    signalIds: Array.isArray(obj.signalIds) ? obj.signalIds.filter((s): s is string => typeof s === "string") : [],
+    keyResultIds: obj.keyResultIds.filter((s): s is string => typeof s === "string"),
   }
 }
 
 export function GripForm({
   commitmentId,
   teamId,
-  primaryOutcome,
-  signals,
+  objectives,
   initiatives: serverInitiatives,
 }: GripFormProps) {
+  const keyResults = flatKeyResults(objectives)
   const [state, formAction, isPending] = useActionState(createCheckIn, null)
   const [isSubmitting, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
@@ -307,7 +293,7 @@ export function GripForm({
 
           if (
             !bypassNoChangeDialog &&
-            isNoMeaningfulChange(fd, primaryOutcome, signals)
+            isNoMeaningfulChange(fd, keyResults)
           ) {
             setShowNoChangeConfirm(true)
             return
@@ -369,7 +355,7 @@ export function GripForm({
           {/* G — Goals Confidence */}
           <section>
             <GripSectionLabel label="G — Goals Confidence" />
-            <GripSectionHint text="How confident are we in reaching our Primary Outcome?" />
+            <GripSectionHint text="How confident are we in reaching our team objectives?" />
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
               Base this on what we&apos;ve learned so far, not on effort or activity.
             </p>
@@ -413,7 +399,7 @@ export function GripForm({
           {/* R — Results Progress */}
           <section>
             <GripSectionLabel label="R — Results Progress" />
-            <GripSectionHint text="What's the current status of the Primary Outcome and Supporting Signals?" />
+            <GripSectionHint text="What's the current status of your key results?" />
 
             {/* Evidence */}
             <div className="mt-5">
@@ -421,89 +407,55 @@ export function GripForm({
                 Evidence
               </div>
               <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-700 dark:bg-zinc-800/30">
-                <div className="space-y-4">
-                  {/* Primary Outcome */}
-                  <div className="rounded-lg border border-zinc-300 bg-white p-5 dark:border-zinc-600 dark:bg-zinc-900">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                      Primary Outcome
-                    </p>
-                    {primaryOutcome.outcomeStatement && (
-                      <p className="mt-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {primaryOutcome.outcomeStatement}
-                      </p>
-                    )}
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      Metric: {primaryOutcome.metric}
-                    </p>
-                    <div className="mt-3 flex items-center gap-6 text-sm">
-                      <div>
-                        <span className="text-xs text-zinc-400 dark:text-zinc-500">Current</span>
-                        <p className="font-semibold text-zinc-900 dark:text-zinc-100">{primaryOutcome.current}</p>
+                <div className="space-y-6">
+                  {objectives.map((objective) => (
+                    <div key={objective.id} className="space-y-3">
+                      <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                          Team Objective
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          {objective.title}
+                        </p>
                       </div>
-                      <div>
-                        <span className="text-xs text-zinc-400 dark:text-zinc-500">Target</span>
-                        <p className="font-medium text-zinc-700 dark:text-zinc-300">{primaryOutcome.target}</p>
-                      </div>
-                      {primaryOutcome.baseline !== null && (
-                        <div>
-                          <span className="text-xs text-zinc-400 dark:text-zinc-500">Baseline</span>
-                          <p className="text-zinc-500 dark:text-zinc-400">{primaryOutcome.baseline}</p>
+                      {objective.keyResults.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                            Key Results
+                          </p>
+                          {objective.keyResults.map((kr) => (
+                            <div
+                              key={kr.id}
+                              className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                            >
+                              <input type="hidden" name="keyResultIds" value={kr.id} />
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                    {kr.title}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kr.metric}</p>
+                                  <div className="mt-0.5 flex gap-3 text-xs text-zinc-400 dark:text-zinc-500">
+                                    <span>Current: {kr.current}</span>
+                                    <span>Target: {kr.target}</span>
+                                    {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
+                                  </div>
+                                </div>
+                                <Input
+                                  name={`kr_${kr.id}`}
+                                  type="number"
+                                  step="any"
+                                  defaultValue={String(kr.current)}
+                                  placeholder="Value"
+                                  className="h-8 w-28"
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
-                    <div className="mt-4">
-                      <Input
-                        name="primaryOutcomeSnapshot"
-                        type="number"
-                        step="any"
-                        label="Updated value"
-                        defaultValue={String(primaryOutcome.current)}
-                        placeholder="e.g., 68"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Progress Indicators */}
-                  {signals.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                        Progress Indicators
-                      </p>
-                      {signals.map((signal) => (
-                        <div key={signal.id} className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
-                          <input type="hidden" name="signalIds" value={signal.id} />
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="min-w-0 flex-1">
-                              {signal.statement && (
-                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                  {signal.statement}
-                                </p>
-                              )}
-                              <p className={cn(
-                                "text-xs text-zinc-500 dark:text-zinc-400",
-                                signal.statement ? "mt-0.5" : ""
-                              )}>
-                                {signal.metric}
-                              </p>
-                              <div className="mt-0.5 flex gap-3 text-xs text-zinc-400 dark:text-zinc-500">
-                                <span>Current: {signal.current}</span>
-                                <span>Target: {signal.target}</span>
-                                {signal.baseline !== null && <span>Baseline: {signal.baseline}</span>}
-                              </div>
-                            </div>
-                            <Input
-                              name={`signal_${signal.id}`}
-                              type="number"
-                              step="any"
-                              defaultValue={String(signal.current)}
-                              placeholder="Value"
-                              className="h-8 w-28"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
@@ -515,7 +467,7 @@ export function GripForm({
               </div>
               <Textarea
                 name="resultsReflection"
-                label="What are we seeing in the Primary Outcome and Progress Indicators? What might be causing this movement (or lack of it)?"
+                label="What are we seeing in the key results? What might be causing this movement (or lack of it)?"
                 placeholder="Interpret the data. What does it mean? What might be driving the movement?"
                 rows={4}
               />
@@ -551,18 +503,12 @@ export function GripForm({
                           Conclude
                         </button>
                       </div>
-                      {init.expectedImpact && (
+                      {init.expectedImpact && init.expectedImpact.keyResultIds.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1.5">
-                          {init.expectedImpact.primary && (
-                            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                              → Primary Outcome
-                            </span>
-                          )}
-                          {init.expectedImpact.signalIds.length > 0 && (
-                            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                              → {init.expectedImpact.signalIds.length} signal{init.expectedImpact.signalIds.length > 1 ? "s" : ""}
-                            </span>
-                          )}
+                          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                            → {init.expectedImpact.keyResultIds.length} key result
+                            {init.expectedImpact.keyResultIds.length > 1 ? "s" : ""}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -612,7 +558,7 @@ export function GripForm({
             <GripSectionLabel label="I — Issues" />
             <GripSectionHint text="What's getting in the way, and how can we overcome it?" />
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-              Include blockers, risks, or assumptions that may affect our ability to move the Primary Outcome.
+              Include blockers, risks, or assumptions that may affect our ability to reach the team objectives.
             </p>
             <div className="mt-4">
               <Card>
@@ -747,7 +693,7 @@ export function GripForm({
         <AddInitiativeModal
           commitmentId={commitmentId}
           teamId={teamId}
-          signals={signals}
+          keyResults={keyResults}
           onClose={() => setShowAddInitiativeModal(false)}
           onCreated={handleInitiativeCreated}
         />

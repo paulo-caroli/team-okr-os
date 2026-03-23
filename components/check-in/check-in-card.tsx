@@ -29,7 +29,8 @@ export function CheckInCard({ checkIn, teamId, commitmentId }: CheckInCardProps)
               {checkIn.confidence} confidence
             </Badge>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              Primary: {checkIn.primaryOutcomeSnapshot}
+              {checkIn.keyResultSnapshots.length} key result
+              {checkIn.keyResultSnapshots.length !== 1 ? "s" : ""} updated
             </span>
           </div>
           <span className="text-sm text-zinc-400 dark:text-zinc-500">

@@ -1,8 +1,8 @@
 export type Confidence = "HIGH" | "MEDIUM" | "LOW"
 
-export interface SignalSnapshot {
-  signalId: string
-  metric: string
+export interface KeyResultSnapshot {
+  keyResultId: string
+  label: string
   value: number
 }
 
@@ -12,11 +12,10 @@ export interface CheckInView {
   occurredAt: Date
   confidence: Confidence
   confidenceReason: string | null
-  primaryOutcomeSnapshot: number
+  keyResultSnapshots: KeyResultSnapshot[]
   resultsReflection: string
   initiativeReflection: string | null
   issues: string
   planForward: string
-  supportingSignalSnapshots: SignalSnapshot[]
   createdAt: Date
 }

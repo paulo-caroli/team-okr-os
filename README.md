@@ -16,8 +16,8 @@ Team OKR OS is NOT a generic OKR tool, backlog manager, or corporate OKR platfor
 ## Core concepts
 
 - **Strategic Context** — The strategic tension or outcome this commitment responds to
-- **Primary Outcome** — The ONE measurable result the team commits to move
-- **Supporting Signals** — Secondary metrics that indicate progress
+- **Team Objectives** — Clear outcomes the team commits to for the cycle (often 1–2)
+- **Key Results** — Measurable outcomes that show progress toward each objective
 - **Initiatives** — Bets with explicit hypotheses about impact
 - **GRIP Sessions** — Structured impact check-ins
 

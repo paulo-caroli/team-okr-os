@@ -55,7 +55,7 @@ export function NoActiveCommitment({
       <p className="mt-4 text-base leading-relaxed text-zinc-500 dark:text-zinc-400">
         Execution without commitment leads to activity — not impact.
         <br />
-        Define the one measurable outcome this team will move this cycle.
+        Define the team objectives and key results this cycle will move.
       </p>
 
       <div className="mt-8">
@@ -65,7 +65,7 @@ export function NoActiveCommitment({
       </div>
 
       <p className="mt-3 text-sm text-zinc-400 dark:text-zinc-500">
-        You can only commit to one Primary Outcome per cycle.
+        One active commitment per team at a time — with one or more objectives inside it.
       </p>
 
       <div className="mt-6 flex items-center justify-center gap-4">

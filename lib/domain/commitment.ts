@@ -2,12 +2,22 @@ export interface StrategicIntent {
   text: string
 }
 
-export interface PrimaryOutcome {
-  outcomeStatement: string | null
+export interface KeyResult {
+  id: string
+  title: string
   metric: string
   baseline: number | null
   target: number
   current: number
+  sortOrder: number
+}
+
+export interface ObjectiveView {
+  id: string
+  title: string
+  description: string | null
+  sortOrder: number
+  keyResults: KeyResult[]
 }
 
 export interface Cycle {
@@ -16,45 +26,53 @@ export interface Cycle {
   endDate: Date
 }
 
-export interface SupportingSignal {
-  id: string
-  statement: string | null
-  metric: string
-  baseline: number | null
-  target: number
-  current: number
-  order: number
-}
-
 export type CommitmentStatus = "ACTIVE" | "COMPLETED" | "ABANDONED"
 
 export interface CommitmentView {
   id: string
   teamId: string
   strategicIntent: StrategicIntent
-  primaryOutcome: PrimaryOutcome
+  objectives: ObjectiveView[]
   cycle: Cycle
   status: CommitmentStatus
   completionNotes: string | null
   completedAt: Date | null
   abandonmentReason: string | null
   abandonedAt: Date | null
-  supportingSignals: SupportingSignal[]
   initiativeCount: number
   checkInCount: number
   createdAt: Date
   updatedAt: Date
 }
 
+/** 0–100 progress for one key result (clamped). */
+export function keyResultProgressPercent(kr: KeyResult): number {
+  const baseline = kr.baseline ?? kr.target
+  const span = kr.target - baseline
+  if (span === 0) {
+    return kr.current >= kr.target ? 100 : 0
+  }
+  const raw = ((kr.current - baseline) / span) * 100
+  return Math.min(100, Math.max(0, raw))
+}
+
+/** Average KR progress; 0 if there are no key results. */
+export function objectiveProgressPercent(objective: ObjectiveView): number {
+  const krs = objective.keyResults
+  if (krs.length === 0) return 0
+  const sum = krs.reduce((acc, kr) => acc + keyResultProgressPercent(kr), 0)
+  return sum / krs.length
+}
+
+/** All key results for a commitment (e.g. initiative impact pickers, GRIP form). */
+export function flatKeyResults(objectives: ObjectiveView[]): KeyResult[] {
+  return objectives.flatMap((o) => o.keyResults)
+}
+
 export function toCommitmentView(raw: {
   id: string
   teamId: string
   strategicIntent: string
-  primaryOutcomeStatement: string | null
-  primaryMetric: string
-  primaryBaseline: number | null
-  primaryTarget: number
-  primaryCurrent: number
   cycleLabel: string | null
   cycleStartDate: Date
   cycleEndDate: Date
@@ -63,7 +81,21 @@ export function toCommitmentView(raw: {
   completedAt: Date | null
   abandonmentReason: string | null
   abandonedAt: Date | null
-  supportingSignals: SupportingSignal[]
+  objectives: Array<{
+    id: string
+    title: string
+    description: string | null
+    sortOrder: number
+    keyResults: Array<{
+      id: string
+      title: string
+      metric: string
+      baseline: number | null
+      target: number
+      current: number
+      sortOrder: number
+    }>
+  }>
   _count?: { initiatives: number; checkIns: number }
   createdAt: Date
   updatedAt: Date
@@ -72,13 +104,21 @@ export function toCommitmentView(raw: {
     id: raw.id,
     teamId: raw.teamId,
     strategicIntent: { text: raw.strategicIntent },
-    primaryOutcome: {
-      outcomeStatement: raw.primaryOutcomeStatement,
-      metric: raw.primaryMetric,
-      baseline: raw.primaryBaseline,
-      target: raw.primaryTarget,
-      current: raw.primaryCurrent,
-    },
+    objectives: raw.objectives.map((o) => ({
+      id: o.id,
+      title: o.title,
+      description: o.description,
+      sortOrder: o.sortOrder,
+      keyResults: o.keyResults.map((kr) => ({
+        id: kr.id,
+        title: kr.title,
+        metric: kr.metric,
+        baseline: kr.baseline,
+        target: kr.target,
+        current: kr.current,
+        sortOrder: kr.sortOrder,
+      })),
+    })),
     cycle: {
       label: raw.cycleLabel,
       startDate: raw.cycleStartDate,
@@ -89,7 +129,6 @@ export function toCommitmentView(raw: {
     completedAt: raw.completedAt,
     abandonmentReason: raw.abandonmentReason,
     abandonedAt: raw.abandonedAt,
-    supportingSignals: raw.supportingSignals,
     initiativeCount: raw._count?.initiatives ?? 0,
     checkInCount: raw._count?.checkIns ?? 0,
     createdAt: raw.createdAt,

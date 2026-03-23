@@ -4,10 +4,9 @@ import type { InitiativeView, ExpectedImpact } from "@/lib/domain/initiative"
 function parseExpectedImpact(raw: unknown): ExpectedImpact | null {
   if (!raw || typeof raw !== "object") return null
   const obj = raw as Record<string, unknown>
-  if (typeof obj.primary !== "boolean") return null
+  if (!Array.isArray(obj.keyResultIds)) return null
   return {
-    primary: obj.primary,
-    signalIds: Array.isArray(obj.signalIds) ? obj.signalIds.filter((s): s is string => typeof s === "string") : [],
+    keyResultIds: obj.keyResultIds.filter((s): s is string => typeof s === "string"),
   }
 }
 

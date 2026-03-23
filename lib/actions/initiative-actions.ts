@@ -27,19 +27,16 @@ export async function createInitiative(
   }
   if (!hypothesis) {
     console.info("[createInitiative] validation_error", { code: "hypothesis", teamId, commitmentId })
-    return { error: "Please explain why you believe this initiative will influence the Primary Outcome." }
+    return { error: "Please explain why you believe this initiative will influence your team objectives." }
   }
 
-  const impactPrimary = formData.get("impactPrimary") === "true"
-  const impactSignalIdsRaw = (formData.get("impactSignalIds") as string)?.trim()
-  const impactSignalIds = impactSignalIdsRaw
-    ? impactSignalIdsRaw.split(",").filter(Boolean)
+  const impactKeyResultIdsRaw = (formData.get("impactKeyResultIds") as string)?.trim()
+  const impactKeyResultIds = impactKeyResultIdsRaw
+    ? impactKeyResultIdsRaw.split(",").filter(Boolean)
     : []
 
-  const hasImpact = impactPrimary || impactSignalIds.length > 0
-  const expectedImpact = hasImpact
-    ? { primary: impactPrimary, signalIds: impactSignalIds }
-    : null
+  const hasImpact = impactKeyResultIds.length > 0
+  const expectedImpact = hasImpact ? { keyResultIds: impactKeyResultIds } : null
 
   try {
     const initiative = await db.initiative.create({
@@ -154,18 +151,17 @@ export async function updateInitiative(
   const hypothesis = (formData.get("hypothesis") as string)?.trim()
 
   if (!name) return { error: "Initiative name is required." }
-  if (!hypothesis) return { error: "Please explain why you believe this initiative will influence the Primary Outcome." }
+  if (!hypothesis) {
+    return { error: "Please explain why you believe this initiative will influence your team objectives." }
+  }
 
-  const impactPrimary = formData.get("impactPrimary") === "true"
-  const impactSignalIdsRaw = (formData.get("impactSignalIds") as string)?.trim()
-  const impactSignalIds = impactSignalIdsRaw
-    ? impactSignalIdsRaw.split(",").filter(Boolean)
+  const impactKeyResultIdsRaw = (formData.get("impactKeyResultIds") as string)?.trim()
+  const impactKeyResultIds = impactKeyResultIdsRaw
+    ? impactKeyResultIdsRaw.split(",").filter(Boolean)
     : []
 
-  const hasImpact = impactPrimary || impactSignalIds.length > 0
-  const expectedImpact = hasImpact
-    ? { primary: impactPrimary, signalIds: impactSignalIds }
-    : null
+  const hasImpact = impactKeyResultIds.length > 0
+  const expectedImpact = hasImpact ? { keyResultIds: impactKeyResultIds } : null
 
   const initiative = await db.initiative.update({
     where: { id: initiativeId },

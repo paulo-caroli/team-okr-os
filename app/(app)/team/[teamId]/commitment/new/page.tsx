@@ -6,21 +6,21 @@ import { Card } from "@/components/ui/card"
 
 export interface CommitmentPrefill {
   strategicIntent: string
-  primaryOutcomeStatement: string | null
-  primaryMetric: string
-  primaryBaseline: number | null
-  primaryCurrent: number
-  signals: Array<{
-    statement: string | null
-    metric: string
-    baseline: number | null
-    current: number
+  objectives: Array<{
+    title: string
+    description: string | null
+    keyResults: Array<{
+      title: string
+      metric: string
+      baseline: number | null
+      target: number
+      current: number
+    }>
   }>
   initiatives: Array<{
     name: string
     hypothesis: string
   }>
-  previousCurrentValue: number
 }
 
 export default async function NewCommitmentPage({
@@ -34,10 +34,7 @@ export default async function NewCommitmentPage({
   const { cloneFrom } = await searchParams
   await requireTeamAccess(teamId)
 
-  const [team, members] = await Promise.all([
-    db.team.findUnique({ where: { id: teamId } }),
-    getTeamMembers(teamId),
-  ])
+  const members = await getTeamMembers(teamId)
 
   const pendingInvitations = await db.teamInvitation.findMany({
     where: { teamId, status: "PENDING" },
@@ -50,7 +47,10 @@ export default async function NewCommitmentPage({
     const previous = await db.teamCommitment.findUnique({
       where: { id: cloneFrom },
       include: {
-        supportingSignals: { orderBy: { order: "asc" } },
+        objectives: {
+          orderBy: { sortOrder: "asc" },
+          include: { keyResults: { orderBy: { sortOrder: "asc" } } },
+        },
         initiatives: { select: { name: true, hypothesis: true } },
       },
     })
@@ -58,21 +58,21 @@ export default async function NewCommitmentPage({
     if (previous && previous.teamId === teamId && previous.status !== "ACTIVE") {
       prefill = {
         strategicIntent: previous.strategicIntent,
-        primaryOutcomeStatement: previous.primaryOutcomeStatement,
-        primaryMetric: previous.primaryMetric,
-        primaryBaseline: previous.primaryCurrent,
-        primaryCurrent: previous.primaryCurrent,
-        signals: previous.supportingSignals.map((s) => ({
-          statement: s.statement,
-          metric: s.metric,
-          baseline: s.current,
-          current: s.current,
+        objectives: previous.objectives.map((o) => ({
+          title: o.title,
+          description: o.description,
+          keyResults: o.keyResults.map((kr) => ({
+            title: kr.title,
+            metric: kr.metric,
+            baseline: kr.baseline,
+            current: kr.current,
+            target: kr.target,
+          })),
         })),
         initiatives: previous.initiatives.map((i) => ({
           name: i.name,
           hypothesis: i.hypothesis,
         })),
-        previousCurrentValue: previous.primaryCurrent,
       }
     }
   }
@@ -90,7 +90,6 @@ export default async function NewCommitmentPage({
         </p>
       </div>
 
-      {/* Team roster reminder */}
       <Card className="mb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
           This commitment is made by
