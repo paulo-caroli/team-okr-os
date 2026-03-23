@@ -78,7 +78,11 @@ model TeamOkr {
   teamId String
   team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
-  strategicIntent String
+  /// Short scan-friendly label (e.g. “Q1 Growth bet”)
+  title          String @default("")
+  /// Full team-level outcome statement for this OKR set
+  teamObjective  String @default("")
+
   cycleLabel      String?
   cycleStartDate  DateTime
   cycleEndDate    DateTime

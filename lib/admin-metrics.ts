@@ -242,6 +242,7 @@ export async function getCommitmentAdminRows(): Promise<CommitmentAdminRow[]> {
       u.email                         AS "email",
       t.name                          AS "teamName",
       COALESCE(
+        NULLIF(TRIM(c."title"), ''),
         (SELECT o.title FROM "Objective" o WHERE o."commitmentId" = c.id ORDER BY o."sortOrder" ASC LIMIT 1),
         'Commitment'
       ) AS "commitmentTitle",
@@ -264,6 +265,7 @@ export async function getCommitmentAdminRows(): Promise<CommitmentAdminRow[]> {
     LEFT JOIN "Initiative" i ON i."commitmentId" = c.id
     GROUP BY
       c.id,
+      c."title",
       u.name,
       u.email,
       t.name,

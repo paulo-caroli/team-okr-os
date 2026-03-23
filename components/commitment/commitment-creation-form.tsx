@@ -9,7 +9,9 @@ import { Card } from "@/components/ui/card"
 import { SectionHeader } from "@/components/ui/section-header"
 import type { CommitmentPrefill } from "@/app/(app)/team/[teamId]/commitment/new/page"
 
-const STRATEGIC_CONTEXT_PLACEHOLDER = "e.g. Premium category revenue must grow 40% this year."
+const TITLE_PLACEHOLDER = "Activation Boost"
+const TEAM_OBJECTIVE_PLACEHOLDER =
+  "Increase user activation by helping users reach value faster, improving conversion and retention."
 
 const MAX_OBJECTIVES = 8
 const MAX_KR = 8
@@ -100,18 +102,28 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
 
       <div>
         <SectionHeader
-          title="Strategic Context"
-          description="Why does this commitment exist now?"
+          title="Team OKR"
+          description="Title is a quick, scannable name. Team Objective is the single place for the outcome and why it matters."
           className="mb-4"
         />
-        <Card>
-          <Textarea
-            name="strategicIntent"
-            placeholder={STRATEGIC_CONTEXT_PLACEHOLDER}
-            hint="Describe the broader strategic priority or challenge this commitment supports."
+        <Card className="space-y-4">
+          <Input
+            name="title"
+            label="Title"
+            placeholder={TITLE_PLACEHOLDER}
+            hint='Short and easy to scan — e.g. "Reduce Churn" or "Improve Onboarding".'
             required
-            rows={3}
-            defaultValue={prefill?.strategicIntent}
+            maxLength={120}
+            defaultValue={prefill?.title}
+          />
+          <Textarea
+            name="teamObjective"
+            label="Team Objective"
+            placeholder={TEAM_OBJECTIVE_PLACEHOLDER}
+            hint="What outcome are we trying to achieve, and why does it matter?"
+            required
+            rows={4}
+            defaultValue={prefill?.teamObjective}
           />
         </Card>
       </div>

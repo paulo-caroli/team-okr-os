@@ -4,8 +4,7 @@ import type { CommitmentView } from "@/lib/domain/commitment"
 import { flatKeyResults } from "@/lib/domain/commitment"
 import type { InitiativeView } from "@/lib/domain/initiative"
 import type { CheckInView } from "@/lib/domain/check-in"
-import { StrategicIntentSection } from "./strategic-intent-section"
-import { CycleSection } from "./cycle-section"
+import { TeamOkrHeading } from "./team-okr-heading"
 import { TeamOkrsSection } from "./team-okrs-section"
 import { InitiativeList } from "@/components/initiative/initiative-list"
 import { CheckInTimeline } from "@/components/check-in/check-in-timeline"
@@ -31,6 +30,8 @@ export function CommitmentOverview({
 
   return (
     <div className="space-y-8">
+      <TeamOkrHeading commitment={commitment} />
+
       <CommitmentStatusBar commitment={commitment} teamId={teamId} />
 
       {commitment.status === "COMPLETED" && (
@@ -46,16 +47,6 @@ export function CommitmentOverview({
           abandonedAt={commitment.abandonedAt}
         />
       )}
-
-      <StrategicIntentSection intent={commitment.strategicIntent} />
-
-      <div>
-        <h2 className="mb-3 text-xl font-semibold text-zinc-900 dark:text-zinc-100">Cycle</h2>
-        <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
-          The time boundary for this commitment.
-        </p>
-        <CycleSection cycle={commitment.cycle} />
-      </div>
 
       <TeamOkrsSection commitment={commitment} teamId={teamId} />
 

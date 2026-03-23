@@ -5,7 +5,8 @@ import { db } from "@/lib/db"
 import { Card } from "@/components/ui/card"
 
 export interface CommitmentPrefill {
-  strategicIntent: string
+  title: string
+  teamObjective: string
   objectives: Array<{
     title: string
     description: string | null
@@ -57,7 +58,8 @@ export default async function NewCommitmentPage({
 
     if (previous && previous.teamId === teamId && previous.status !== "ACTIVE") {
       prefill = {
-        strategicIntent: previous.strategicIntent,
+        title: previous.title,
+        teamObjective: previous.teamObjective,
         objectives: previous.objectives.map((o) => ({
           title: o.title,
           description: o.description,

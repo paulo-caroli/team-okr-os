@@ -1,7 +1,3 @@
-export interface StrategicIntent {
-  text: string
-}
-
 export interface KeyResult {
   id: string
   title: string
@@ -31,7 +27,10 @@ export type CommitmentStatus = "DRAFT" | "ACTIVE" | "COMPLETED" | "ABANDONED"
 export interface CommitmentView {
   id: string
   teamId: string
-  strategicIntent: StrategicIntent
+  /** Short scan-friendly title */
+  title: string
+  /** Full team-level outcome statement */
+  teamObjective: string
   objectives: ObjectiveView[]
   cycle: Cycle
   status: CommitmentStatus
@@ -76,7 +75,8 @@ export function flatKeyResults(objectives: ObjectiveView[]): KeyResult[] {
 export function toCommitmentView(raw: {
   id: string
   teamId: string
-  strategicIntent: string
+  title: string
+  teamObjective: string
   cycleLabel: string | null
   cycleStartDate: Date
   cycleEndDate: Date
@@ -108,7 +108,8 @@ export function toCommitmentView(raw: {
   return {
     id: raw.id,
     teamId: raw.teamId,
-    strategicIntent: { text: raw.strategicIntent },
+    title: raw.title,
+    teamObjective: raw.teamObjective,
     objectives: raw.objectives.map((o) => ({
       id: o.id,
       title: o.title,

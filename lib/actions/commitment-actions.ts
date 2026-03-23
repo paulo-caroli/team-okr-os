@@ -107,12 +107,15 @@ export async function createCommitment(
   if (!session?.user?.id) redirect("/sign-in")
 
   const teamId = formData.get("teamId") as string
-  const strategicIntent = (formData.get("strategicIntent") as string)?.trim()
+  const title = (formData.get("title") as string)?.trim()
+  const teamObjective = (formData.get("teamObjective") as string)?.trim()
   const cycleLabel = (formData.get("cycleLabel") as string)?.trim() || null
   const cycleStartDate = formData.get("cycleStartDate") as string
   const cycleEndDate = formData.get("cycleEndDate") as string
 
-  if (!strategicIntent) return { error: "Strategic intent is required." }
+  if (!title) return { error: "A short Team OKR title is required." }
+  if (title.length > 120) return { error: "Title must be 120 characters or less." }
+  if (!teamObjective) return { error: "Team objective (full description) is required." }
   if (!cycleStartDate || !cycleEndDate) return { error: "Cycle dates are required." }
 
   const start = new Date(cycleStartDate)
@@ -152,7 +155,8 @@ export async function createCommitment(
   const commitment = await db.teamOkr.create({
     data: {
       teamId,
-      strategicIntent,
+      title,
+      teamObjective,
       cycleLabel,
       cycleStartDate: start,
       cycleEndDate: end,
