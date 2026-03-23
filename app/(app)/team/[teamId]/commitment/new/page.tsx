@@ -83,10 +83,10 @@ export default async function NewCommitmentPage({
     <div className="mx-auto max-w-2xl">
       <div className="mb-10">
         <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-          Create team commitment
+          Create Team OKR
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-          A commitment is made <strong className="text-zinc-700 dark:text-zinc-300">by the team, for the team</strong>.
+          A Team OKR is defined <strong className="text-zinc-700 dark:text-zinc-300">by the team, for the team</strong>.
           It is not cascaded from above. The people listed below should
           participate in defining what this team commits to move.
         </p>
@@ -94,7 +94,7 @@ export default async function NewCommitmentPage({
 
       <Card className="mb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-          This commitment is made by
+          This Team OKR is defined by
         </p>
         <div className="flex flex-wrap gap-2">
           {members.map((m) => (
@@ -108,7 +108,7 @@ export default async function NewCommitmentPage({
               {m.user.name}
               {m.dedicationPct != null && (
                 <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                  {m.dedicationPct}% committed
+                  {m.dedicationPct}% dedication
                 </span>
               )}
             </span>

@@ -10,8 +10,6 @@ import { SectionHeader } from "@/components/ui/section-header"
 import type { CommitmentPrefill } from "@/app/(app)/team/[teamId]/commitment/new/page"
 
 const TITLE_PLACEHOLDER = "Activation Boost"
-const TEAM_OBJECTIVE_PLACEHOLDER =
-  "Increase user activation by helping users reach value faster, improving conversion and retention."
 
 const MAX_OBJECTIVES = 8
 const MAX_KR = 8
@@ -92,10 +90,10 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
       {prefill && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-5 py-4 dark:border-blue-800/50 dark:bg-blue-900/10">
           <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-            You are creating a new commitment based on a previous one.
+            You are creating a new Team OKR based on a previous one.
           </p>
           <p className="mt-1 text-sm text-blue-600 dark:text-blue-400">
-            Team objectives and key results are pre-filled from the last cycle — adjust as needed.
+            Objectives and key results are pre-filled from the last cycle — adjust as needed.
           </p>
         </div>
       )}
@@ -119,8 +117,6 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
           <Textarea
             name="teamObjective"
             label="Team Objective"
-            placeholder={TEAM_OBJECTIVE_PLACEHOLDER}
-            hint="What outcome are we trying to achieve, and why does it matter?"
             required
             rows={4}
             defaultValue={prefill?.teamObjective}
@@ -130,8 +126,8 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
 
       <div className="mt-14">
         <SectionHeader
-          title="Team OKRs"
-          description="Define team objectives and measurable key results. Most teams do best with 1–2 objectives and 2–4 key results each."
+          title="Team OKR"
+          description="Define a team objective and measurable key results for this OKR. Most teams do best with 1–2 objectives and 2–4 key results each."
           className="mb-4"
           action={
             objectiveCount < MAX_OBJECTIVES ? (
@@ -145,14 +141,14 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                   setKrCounts((prev) => ({ ...prev, [next]: 2 }))
                 }}
               >
-                + Add Team Objective
+                + Add Team OKR
               </Button>
             ) : null
           }
         />
         {objectiveCount > 2 && (
           <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-            Most teams perform best with 1–2 objectives.
+            Most teams perform best with 1–2 objectives for this OKR.
           </p>
         )}
 
@@ -190,9 +186,8 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
 
                 <Textarea
                   name={`obj_${oi}_title`}
-                  label="Team Objective"
-                  placeholder="A clear and specific outcome the team commits to achieving this cycle."
-                  hint="A clear and specific outcome the team commits to achieving this cycle."
+                  label="Objective"
+                  placeholder="A clear, specific outcome this Team OKR is driving this cycle."
                   required
                   rows={2}
                   defaultValue={prefillObj?.title}
@@ -322,7 +317,7 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
       <div>
         <SectionHeader
           title="Cycle"
-          description="The time boundary for this commitment"
+          description="The time boundary for this Team OKR"
           className="mb-4"
         />
         <Card>
@@ -342,7 +337,7 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
         <div>
           <SectionHeader
             title="Previous Initiatives"
-            description={`${prefill.initiatives.length} initiative${prefill.initiatives.length > 1 ? "s" : ""} from the previous commitment`}
+            description={`${prefill.initiatives.length} initiative${prefill.initiatives.length > 1 ? "s" : ""} from the previous Team OKR`}
             className="mb-4"
           />
           <Card className="space-y-4">
@@ -357,7 +352,7 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
               />
               <div>
                 <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Copy previous initiatives into this new commitment
+                  Copy previous initiatives into this new Team OKR
                 </span>
                 <span className="mt-0.5 block text-xs text-zinc-400 dark:text-zinc-500">
                   Initiative names and hypotheses will be copied. Status will be reset to Active.
@@ -384,14 +379,14 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
       <div className="border-t border-zinc-200 pt-8 dark:border-zinc-800">
         <div className="flex items-center gap-4">
           <Button type="submit" size="lg" loading={isPending}>
-            Create commitment
+            Create Team OKR
           </Button>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            This creates an explicit team commitment to measurable outcomes.
+            This creates an explicit Team OKR with measurable outcomes.
           </p>
         </div>
         <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
-          This activates the commitment immediately. Objective wording and key result definitions are fixed
+          This activates the Team OKR immediately. Objective wording and key result definitions are fixed
           after activation (you can still update current values during the cycle).
         </p>
       </div>
