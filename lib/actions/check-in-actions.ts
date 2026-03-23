@@ -44,7 +44,7 @@ export async function createCheckIn(
   }
 
   const keyResults = await db.keyResult.findMany({
-    where: { objective: { commitmentId } },
+    where: { objective: { teamOkrId: commitmentId } },
     select: { id: true, current: true },
   })
 
@@ -88,7 +88,7 @@ export async function createCheckIn(
 
       return tx.gripSession.create({
         data: {
-          commitmentId,
+          teamOkrId: commitmentId,
           occurredAt,
           confidence,
           confidenceReason,

@@ -1,6 +1,5 @@
 import { db } from "@/lib/db"
 import { toCommitmentView, type CommitmentView } from "@/lib/domain/commitment"
-
 const objectiveInclude = {
   orderBy: { sortOrder: "asc" as const },
   include: {
@@ -8,79 +7,85 @@ const objectiveInclude = {
   },
 }
 
+const teamOkrInclude = {
+  include: {
+    objectives: objectiveInclude,
+    _count: { select: { initiatives: true, checkIns: true } },
+  },
+} as const
+
+/** All ACTIVE Team OKRs for a team (primary first). */
+export async function getActiveTeamOkrs(teamId: string): Promise<CommitmentView[]> {
+  const rows = await db.teamOkr.findMany({
+    where: { teamId, status: "ACTIVE" },
+    ...teamOkrInclude,
+    orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+  })
+  return rows.map(toCommitmentView)
+}
+
+/** Primary ACTIVE Team OKR, or first ACTIVE if none flagged primary. */
+export async function getPrimaryTeamOkr(teamId: string): Promise<CommitmentView | null> {
+  let row = await db.teamOkr.findFirst({
+    where: { teamId, status: "ACTIVE", isPrimary: true },
+    ...teamOkrInclude,
+  })
+  if (!row) {
+    row = await db.teamOkr.findFirst({
+      where: { teamId, status: "ACTIVE" },
+      ...teamOkrInclude,
+      orderBy: { createdAt: "asc" },
+    })
+  }
+  if (!row) return null
+  return toCommitmentView(row)
+}
+
+/** @deprecated Use getPrimaryTeamOkr or getActiveTeamOkrs */
 export async function getActiveCommitment(
   teamId: string
 ): Promise<CommitmentView | null> {
-  const commitment = await db.teamCommitment.findFirst({
-    where: { teamId, status: "ACTIVE" },
-    include: {
-      objectives: objectiveInclude,
-      _count: { select: { initiatives: true, checkIns: true } },
-    },
-  })
-
-  if (!commitment) return null
-  return toCommitmentView(commitment)
+  return getPrimaryTeamOkr(teamId)
 }
 
-export async function getCommitment(
-  commitmentId: string
-): Promise<CommitmentView | null> {
-  const commitment = await db.teamCommitment.findUnique({
-    where: { id: commitmentId },
-    include: {
-      objectives: objectiveInclude,
-      _count: { select: { initiatives: true, checkIns: true } },
-    },
+export async function getCommitment(teamOkrId: string): Promise<CommitmentView | null> {
+  const row = await db.teamOkr.findUnique({
+    where: { id: teamOkrId },
+    ...teamOkrInclude,
   })
-
-  if (!commitment) return null
-  return toCommitmentView(commitment)
+  if (!row) return null
+  return toCommitmentView(row)
 }
 
-export async function getCommitmentHistory(
-  teamId: string
-): Promise<CommitmentView[]> {
-  const commitments = await db.teamCommitment.findMany({
-    where: { teamId, status: { not: "ACTIVE" } },
-    include: {
-      objectives: objectiveInclude,
-      _count: { select: { initiatives: true, checkIns: true } },
-    },
+export async function getCommitmentHistory(teamId: string): Promise<CommitmentView[]> {
+  const rows = await db.teamOkr.findMany({
+    where: { teamId, status: { in: ["COMPLETED", "ABANDONED"] } },
+    ...teamOkrInclude,
     orderBy: { createdAt: "desc" },
   })
-
-  return commitments.map(toCommitmentView)
+  return rows.map(toCommitmentView)
 }
 
 export async function getLastAbandonedCommitment(
   teamId: string
 ): Promise<CommitmentView | null> {
-  const commitment = await db.teamCommitment.findFirst({
+  const row = await db.teamOkr.findFirst({
     where: { teamId, status: "ABANDONED" },
-    include: {
-      objectives: objectiveInclude,
-      _count: { select: { initiatives: true, checkIns: true } },
-    },
+    ...teamOkrInclude,
     orderBy: { abandonedAt: "desc" },
   })
-
-  if (!commitment) return null
-  return toCommitmentView(commitment)
+  if (!row) return null
+  return toCommitmentView(row)
 }
 
 export async function getLastInactiveCommitment(
   teamId: string
 ): Promise<CommitmentView | null> {
-  const commitment = await db.teamCommitment.findFirst({
-    where: { teamId, status: { not: "ACTIVE" } },
-    include: {
-      objectives: objectiveInclude,
-      _count: { select: { initiatives: true, checkIns: true } },
-    },
+  const row = await db.teamOkr.findFirst({
+    where: { teamId, status: { in: ["COMPLETED", "ABANDONED"] } },
+    ...teamOkrInclude,
     orderBy: { updatedAt: "desc" },
   })
-
-  if (!commitment) return null
-  return toCommitmentView(commitment)
+  if (!row) return null
+  return toCommitmentView(row)
 }

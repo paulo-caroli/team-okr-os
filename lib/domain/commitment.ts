@@ -26,7 +26,7 @@ export interface Cycle {
   endDate: Date
 }
 
-export type CommitmentStatus = "ACTIVE" | "COMPLETED" | "ABANDONED"
+export type CommitmentStatus = "DRAFT" | "ACTIVE" | "COMPLETED" | "ABANDONED"
 
 export interface CommitmentView {
   id: string
@@ -35,6 +35,7 @@ export interface CommitmentView {
   objectives: ObjectiveView[]
   cycle: Cycle
   status: CommitmentStatus
+  isPrimary: boolean
   completionNotes: string | null
   completedAt: Date | null
   abandonmentReason: string | null
@@ -44,6 +45,9 @@ export interface CommitmentView {
   createdAt: Date
   updatedAt: Date
 }
+
+/** @alias CommitmentView — domain Team OKR */
+export type TeamOkrView = CommitmentView
 
 /** 0–100 progress for one key result (clamped). */
 export function keyResultProgressPercent(kr: KeyResult): number {
@@ -64,7 +68,7 @@ export function objectiveProgressPercent(objective: ObjectiveView): number {
   return sum / krs.length
 }
 
-/** All key results for a commitment (e.g. initiative impact pickers, GRIP form). */
+/** All key results for a Team OKR (initiatives, GRIP). */
 export function flatKeyResults(objectives: ObjectiveView[]): KeyResult[] {
   return objectives.flatMap((o) => o.keyResults)
 }
@@ -77,6 +81,7 @@ export function toCommitmentView(raw: {
   cycleStartDate: Date
   cycleEndDate: Date
   status: CommitmentStatus
+  isPrimary: boolean
   completionNotes: string | null
   completedAt: Date | null
   abandonmentReason: string | null
@@ -125,6 +130,7 @@ export function toCommitmentView(raw: {
       endDate: raw.cycleEndDate,
     },
     status: raw.status,
+    isPrimary: raw.isPrimary,
     completionNotes: raw.completionNotes,
     completedAt: raw.completedAt,
     abandonmentReason: raw.abandonmentReason,

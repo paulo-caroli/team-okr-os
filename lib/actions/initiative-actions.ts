@@ -41,7 +41,7 @@ export async function createInitiative(
   try {
     const initiative = await db.initiative.create({
       data: {
-        commitmentId,
+        teamOkrId: commitmentId,
         name,
         hypothesis,
         expectedImpact: expectedImpact ?? undefined,
@@ -109,11 +109,11 @@ export async function concludeInitiative(
       conclusionReason,
       conclusionImpact,
     },
-    select: { commitmentId: true },
+    select: { teamOkrId: true },
   })
 
   revalidatePath(`/team/${teamId}`)
-  revalidatePath(`/team/${teamId}/commitment/${initiative.commitmentId}`)
+  revalidatePath(`/team/${teamId}/commitment/${initiative.teamOkrId}`)
   return { success: true }
 }
 
@@ -131,11 +131,11 @@ export async function reactivateInitiative(
       conclusionReason: null,
       conclusionImpact: null,
     },
-    select: { commitmentId: true },
+    select: { teamOkrId: true },
   })
 
   revalidatePath(`/team/${teamId}`)
-  revalidatePath(`/team/${teamId}/commitment/${initiative.commitmentId}`)
+  revalidatePath(`/team/${teamId}/commitment/${initiative.teamOkrId}`)
 }
 
 export async function updateInitiative(
@@ -170,11 +170,11 @@ export async function updateInitiative(
       hypothesis,
       expectedImpact: expectedImpact ?? undefined,
     },
-    select: { commitmentId: true },
+    select: { teamOkrId: true },
   })
 
   revalidatePath(`/team/${teamId}`)
-  revalidatePath(`/team/${teamId}/commitment/${initiative.commitmentId}`)
+  revalidatePath(`/team/${teamId}/commitment/${initiative.teamOkrId}`)
   return { success: true }
 }
 
@@ -187,9 +187,9 @@ export async function deleteInitiative(
 
   const initiative = await db.initiative.delete({
     where: { id: initiativeId },
-    select: { commitmentId: true },
+    select: { teamOkrId: true },
   })
 
   revalidatePath(`/team/${teamId}`)
-  revalidatePath(`/team/${teamId}/commitment/${initiative.commitmentId}`)
+  revalidatePath(`/team/${teamId}/commitment/${initiative.teamOkrId}`)
 }

@@ -11,16 +11,16 @@ function parseExpectedImpact(raw: unknown): ExpectedImpact | null {
 }
 
 export async function getInitiatives(
-  commitmentId: string
+  teamOkrId: string
 ): Promise<InitiativeView[]> {
   const initiatives = await db.initiative.findMany({
-    where: { commitmentId },
+    where: { teamOkrId },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
   })
 
   return initiatives.map((i) => ({
     id: i.id,
-    commitmentId: i.commitmentId,
+    commitmentId: i.teamOkrId,
     name: i.name,
     hypothesis: i.hypothesis,
     expectedImpact: parseExpectedImpact(i.expectedImpact),

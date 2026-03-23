@@ -26,7 +26,7 @@ model Team {
   id          String           @id @default(cuid())
   name        String
   members     TeamMember[]
-  commitments TeamCommitment[]
+  teamOkrs    TeamOkr[]
   invitations TeamInvitation[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -71,28 +71,23 @@ enum InvitationStatus {
   CANCELLED
 }
 
-// ─── Commitments ───────────────────────────────────
+// ─── Team OKR (DB table: TeamCommitment) ───────────
 
-model TeamCommitment {
+model TeamOkr {
   id     String @id @default(cuid())
   teamId String
   team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
-  // Strategic Intent (embedded 1:1)
   strategicIntent String
+  cycleLabel      String?
+  cycleStartDate  DateTime
+  cycleEndDate    DateTime
 
-  // Cycle (embedded 1:1)
-  cycleLabel     String?
-  cycleStartDate DateTime
-  cycleEndDate   DateTime
+  status    TeamOkrStatus @default(ACTIVE)
+  isPrimary Boolean       @default(false)
 
-  status CommitmentStatus @default(ACTIVE)
-
-  // Completion
-  completionNotes String?
-  completedAt     DateTime?
-
-  // Abandonment
+  completionNotes   String?
+  completedAt       DateTime?
   abandonmentReason String?
   abandonedAt       DateTime?
 
@@ -102,28 +97,33 @@ model TeamCommitment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("TeamCommitment")
 }
 
-enum CommitmentStatus {
+enum TeamOkrStatus {
+  DRAFT
   ACTIVE
   COMPLETED
   ABANDONED
+
+  @@map("CommitmentStatus")
 }
 
-// ─── Team OKRs: Objectives & Key Results ───────────
+// ─── Objectives & Key Results ──────────────────────
 
 model Objective {
-  id            String         @id @default(cuid())
-  commitmentId  String
-  commitment    TeamCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
-  title         String
-  description   String?
-  sortOrder     Int            @default(0)
-  keyResults    KeyResult[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id        String  @id @default(cuid())
+  teamOkrId String  @map("commitmentId")
+  teamOkr   TeamOkr @relation(fields: [teamOkrId], references: [id], onDelete: Cascade)
+  title     String
+  description String?
+  sortOrder Int     @default(0)
+  keyResults KeyResult[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([commitmentId])
+  @@index([teamOkrId])
 }
 
 model KeyResult {
@@ -142,20 +142,20 @@ model KeyResult {
   @@index([objectiveId])
 }
 
-// ─── Initiatives ───────────────────────────────────
+// ─── Initiatives (belong to TeamOkr) ───────────────
 
 model Initiative {
-  id              String           @id @default(cuid())
-  commitmentId    String
-  commitment      TeamCommitment   @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
-  name            String
-  hypothesis      String
-  expectedImpact  Json?
-  status          InitiativeStatus @default(ACTIVE)
+  id               String           @id @default(cuid())
+  teamOkrId        String           @map("commitmentId")
+  teamOkr          TeamOkr          @relation(fields: [teamOkrId], references: [id], onDelete: Cascade)
+  name             String
+  hypothesis       String
+  expectedImpact   Json?
+  status           InitiativeStatus @default(ACTIVE)
   conclusionReason String?
   conclusionImpact String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 enum InitiativeStatus {
@@ -163,12 +163,12 @@ enum InitiativeStatus {
   CONCLUDED
 }
 
-// ─── GRIP Sessions (Impact Check-ins) ──────────────
+// ─── GRIP Sessions (belong to TeamOkr) ─────────────
 
 model GripSession {
-  id           String         @id @default(cuid())
-  commitmentId String
-  commitment   TeamCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  id           String  @id @default(cuid())
+  teamOkrId    String  @map("commitmentId")
+  teamOkr      TeamOkr @relation(fields: [teamOkrId], references: [id], onDelete: Cascade)
 
   occurredAt           DateTime
   confidence           Confidence

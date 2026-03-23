@@ -130,12 +130,10 @@ export async function createCommitment(
   })
   if (!member) return { error: "You are not a member of this team." }
 
-  const existing = await db.teamCommitment.findFirst({
+  const activeCount = await db.teamOkr.count({
     where: { teamId, status: "ACTIVE" },
   })
-  if (existing) {
-    return { error: "This team already has an active commitment. Complete or abandon it first." }
-  }
+  const isPrimary = activeCount === 0
 
   const shouldCopyInitiatives = formData.get("copyInitiatives") === "true"
   const clonedInitiatives: Array<{ name: string; hypothesis: string }> = []
@@ -151,13 +149,14 @@ export async function createCommitment(
     }
   }
 
-  const commitment = await db.teamCommitment.create({
+  const commitment = await db.teamOkr.create({
     data: {
       teamId,
       strategicIntent,
       cycleLabel,
       cycleStartDate: start,
       cycleEndDate: end,
+      isPrimary,
       objectives: {
         create: objectives.map((o, oi) => ({
           title: o.title,
@@ -214,12 +213,12 @@ export async function updateKeyResultCurrent(
     data: { current: value },
     include: {
       objective: {
-        include: { commitment: { select: { teamId: true, id: true } } },
+        include: { teamOkr: { select: { teamId: true, id: true } } },
       },
     },
   })
 
-  revalidatePath(`/team/${kr.objective.commitment.teamId}`)
+  revalidatePath(`/team/${kr.objective.teamOkr.teamId}`)
 }
 
 export async function createObjective(
@@ -241,23 +240,23 @@ export async function createObjective(
   })
   if (!member) return { error: "You are not a member of this team." }
 
-  const commitment = await db.teamCommitment.findUnique({
+  const teamOkr = await db.teamOkr.findUnique({
     where: { id: commitmentId },
     select: { teamId: true, status: true },
   })
-  if (!commitment || commitment.teamId !== teamId || commitment.status !== "ACTIVE") {
-    return { error: "Commitment not found or not active." }
+  if (!teamOkr || teamOkr.teamId !== teamId || teamOkr.status !== "ACTIVE") {
+    return { error: "Team OKR not found or not active." }
   }
 
   const agg = await db.objective.aggregate({
-    where: { commitmentId },
+    where: { teamOkrId: commitmentId },
     _max: { sortOrder: true },
   })
   const nextOrder = (agg._max.sortOrder ?? -1) + 1
 
   await db.objective.create({
     data: {
-      commitmentId,
+      teamOkrId: commitmentId,
       title,
       description,
       sortOrder: nextOrder,
@@ -301,13 +300,13 @@ export async function createKeyResult(
 
   const objective = await db.objective.findUnique({
     where: { id: objectiveId },
-    include: { commitment: { select: { id: true, teamId: true, status: true } } },
+    include: { teamOkr: { select: { id: true, teamId: true, status: true } } },
   })
   if (
     !objective ||
-    objective.commitmentId !== commitmentId ||
-    objective.commitment.teamId !== teamId ||
-    objective.commitment.status !== "ACTIVE"
+    objective.teamOkrId !== commitmentId ||
+    objective.teamOkr.teamId !== teamId ||
+    objective.teamOkr.status !== "ACTIVE"
   ) {
     return { error: "Objective not found." }
   }
@@ -356,20 +355,21 @@ export async function completeCommitment(
   })
   if (!member) return { error: "You are not a member of this team." }
 
-  const commitment = await db.teamCommitment.findUnique({
+  const teamOkr = await db.teamOkr.findUnique({
     where: { id: commitmentId },
   })
-  if (!commitment || commitment.teamId !== teamId) {
-    return { error: "Commitment not found." }
+  if (!teamOkr || teamOkr.teamId !== teamId) {
+    return { error: "Team OKR not found." }
   }
-  if (commitment.status !== "ACTIVE") {
-    return { error: "Only active commitments can be completed." }
+  if (teamOkr.status !== "ACTIVE") {
+    return { error: "Only active Team OKRs can be completed." }
   }
 
-  await db.teamCommitment.update({
+  await db.teamOkr.update({
     where: { id: commitmentId },
     data: {
       status: "COMPLETED",
+      isPrimary: false,
       completionNotes: notes,
       completedAt: new Date(),
     },
@@ -406,20 +406,21 @@ export async function abandonCommitment(
   })
   if (!member) return { error: "You are not a member of this team." }
 
-  const commitment = await db.teamCommitment.findUnique({
+  const teamOkr = await db.teamOkr.findUnique({
     where: { id: commitmentId },
   })
-  if (!commitment || commitment.teamId !== teamId) {
-    return { error: "Commitment not found." }
+  if (!teamOkr || teamOkr.teamId !== teamId) {
+    return { error: "Team OKR not found." }
   }
-  if (commitment.status !== "ACTIVE") {
-    return { error: "Only active commitments can be abandoned." }
+  if (teamOkr.status !== "ACTIVE") {
+    return { error: "Only active Team OKRs can be abandoned." }
   }
 
-  await db.teamCommitment.update({
+  await db.teamOkr.update({
     where: { id: commitmentId },
     data: {
       status: "ABANDONED",
+      isPrimary: false,
       abandonmentReason: reason,
       abandonedAt: new Date(),
     },
@@ -427,4 +428,35 @@ export async function abandonCommitment(
 
   revalidatePath(`/team/${teamId}`)
   redirect(`/team/${teamId}`)
+}
+
+/** Exactly one ACTIVE Team OKR per team may be primary. */
+export async function setPrimaryTeamOkr(teamId: string, teamOkrId: string) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const member = await db.teamMember.findUnique({
+    where: { teamId_userId: { teamId, userId: session.user.id } },
+  })
+  if (!member) return
+
+  const okr = await db.teamOkr.findUnique({
+    where: { id: teamOkrId },
+    select: { teamId: true, status: true },
+  })
+  if (!okr || okr.teamId !== teamId || okr.status !== "ACTIVE") return
+
+  await db.$transaction([
+    db.teamOkr.updateMany({
+      where: { teamId, status: "ACTIVE" },
+      data: { isPrimary: false },
+    }),
+    db.teamOkr.update({
+      where: { id: teamOkrId },
+      data: { isPrimary: true },
+    }),
+  ])
+
+  revalidatePath(`/team/${teamId}`)
+  revalidatePath(`/team/${teamId}/commitment/${teamOkrId}`)
 }

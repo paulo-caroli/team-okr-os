@@ -44,7 +44,7 @@ export default async function NewCommitmentPage({
   let prefill: CommitmentPrefill | null = null
 
   if (cloneFrom) {
-    const previous = await db.teamCommitment.findUnique({
+    const previous = await db.teamOkr.findUnique({
       where: { id: cloneFrom },
       include: {
         objectives: {

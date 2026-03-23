@@ -23,7 +23,7 @@ export async function getTotals(): Promise<Totals> {
   const [users, teams, commitments, checkIns] = await Promise.all([
     db.user.count(),
     db.team.count(),
-    db.teamCommitment.count(),
+    db.teamOkr.count(),
     db.gripSession.count(),
   ])
   return { users, teams, commitments, checkIns }
@@ -34,7 +34,7 @@ export async function getTotalsLast7Days(): Promise<TotalsLast7Days> {
   since.setDate(since.getDate() - 7)
 
   const [commitments, checkIns] = await Promise.all([
-    db.teamCommitment.count({ where: { createdAt: { gte: since } } }),
+    db.teamOkr.count({ where: { createdAt: { gte: since } } }),
     db.gripSession.count({ where: { createdAt: { gte: since } } }),
   ])
   return { commitments, checkIns }
@@ -100,14 +100,14 @@ export async function getActiveUsersLast7Days(): Promise<ActiveUserRow[]> {
       where: { createdAt: { gte: since } },
       select: {
         createdAt: true,
-        commitment: { select: { teamId: true } },
+        teamOkr: { select: { teamId: true } },
       },
     }),
     db.initiative.findMany({
       where: { createdAt: { gte: since } },
       select: {
         createdAt: true,
-        commitment: { select: { teamId: true } },
+        teamOkr: { select: { teamId: true } },
       },
     }),
     db.teamMember.findMany({
@@ -119,8 +119,8 @@ export async function getActiveUsersLast7Days(): Promise<ActiveUserRow[]> {
   ])
 
   const teamIdsFromActivity = new Set<string>()
-  for (const c of checkIns) teamIdsFromActivity.add(c.commitment.teamId)
-  for (const i of initiatives) teamIdsFromActivity.add(i.commitment.teamId)
+  for (const c of checkIns) teamIdsFromActivity.add(c.teamOkr.teamId)
+  for (const i of initiatives) teamIdsFromActivity.add(i.teamOkr.teamId)
 
   const membersInActiveTeams = members.filter((m) =>
     teamIdsFromActivity.has(m.teamId)
@@ -159,7 +159,7 @@ export async function getActiveUsersLast7Days(): Promise<ActiveUserRow[]> {
   }
 
   for (const c of checkIns) {
-    const teamId = c.commitment.teamId
+    const teamId = c.teamOkr.teamId
     const at = c.createdAt
     for (const [uid, row] of byUserId) {
       if (userTeamIds.get(uid)?.has(teamId)) {
@@ -169,7 +169,7 @@ export async function getActiveUsersLast7Days(): Promise<ActiveUserRow[]> {
     }
   }
   for (const i of initiatives) {
-    const teamId = i.commitment.teamId
+    const teamId = i.teamOkr.teamId
     const at = i.createdAt
     for (const [uid, row] of byUserId) {
       if (userTeamIds.get(uid)?.has(teamId)) {

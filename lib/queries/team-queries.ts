@@ -8,7 +8,7 @@ export async function getTeamsForUser(userId: string): Promise<TeamSummary[]> {
       team: {
         include: {
           _count: { select: { members: true } },
-          commitments: {
+          teamOkrs: {
             where: { status: "ACTIVE" },
             select: { id: true },
           },
@@ -22,7 +22,7 @@ export async function getTeamsForUser(userId: string): Promise<TeamSummary[]> {
     id: m.team.id,
     name: m.team.name,
     memberCount: m.team._count.members,
-    hasActiveCommitment: m.team.commitments.length > 0,
+    hasActiveCommitment: m.team.teamOkrs.length > 0,
     createdAt: m.team.createdAt,
   }))
 }

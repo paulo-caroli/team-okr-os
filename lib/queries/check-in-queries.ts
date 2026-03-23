@@ -37,10 +37,10 @@ async function enrichKeyResultSnapshots(
 }
 
 export async function getCheckIns(
-  commitmentId: string
+  teamOkrId: string
 ): Promise<CheckInView[]> {
   const sessions = await db.gripSession.findMany({
-    where: { commitmentId },
+    where: { teamOkrId },
     orderBy: { occurredAt: "desc" },
   })
 
@@ -51,7 +51,7 @@ export async function getCheckIns(
 
       return {
         id: s.id,
-        commitmentId: s.commitmentId,
+        commitmentId: s.teamOkrId,
         occurredAt: s.occurredAt,
         confidence: s.confidence,
         confidenceReason: s.confidenceReason,
@@ -82,7 +82,7 @@ export async function getCheckIn(
 
   return {
     id: s.id,
-    commitmentId: s.commitmentId,
+    commitmentId: s.teamOkrId,
     occurredAt: s.occurredAt,
     confidence: s.confidence,
     confidenceReason: s.confidenceReason,

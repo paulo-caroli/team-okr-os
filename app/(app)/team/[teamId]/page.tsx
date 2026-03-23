@@ -1,5 +1,5 @@
 import { requireTeamAccess } from "@/lib/auth-guard"
-import { getActiveCommitment, getLastInactiveCommitment } from "@/lib/queries/commitment-queries"
+import { getActiveTeamOkrs, getLastInactiveCommitment } from "@/lib/queries/commitment-queries"
 import { getInitiatives } from "@/lib/queries/initiative-queries"
 import { getCheckIns } from "@/lib/queries/check-in-queries"
 import { CommitmentOverview } from "@/components/commitment/commitment-overview"
@@ -13,9 +13,9 @@ export default async function TeamHubPage({
   const { teamId } = await params
   await requireTeamAccess(teamId)
 
-  const commitment = await getActiveCommitment(teamId)
+  const activeOkrs = await getActiveTeamOkrs(teamId)
 
-  if (!commitment) {
+  if (activeOkrs.length === 0) {
     const lastInactive = await getLastInactiveCommitment(teamId)
     return (
       <NoActiveCommitment
@@ -25,17 +25,29 @@ export default async function TeamHubPage({
     )
   }
 
-  const [initiatives, checkIns] = await Promise.all([
-    getInitiatives(commitment.id),
-    getCheckIns(commitment.id),
-  ])
+  const blocks = await Promise.all(
+    activeOkrs.map(async (commitment) => ({
+      commitment,
+      initiatives: await getInitiatives(commitment.id),
+      checkIns: await getCheckIns(commitment.id),
+    }))
+  )
 
   return (
-    <CommitmentOverview
-      commitment={commitment}
-      initiatives={initiatives}
-      checkIns={checkIns}
-      teamId={teamId}
-    />
+    <div className="space-y-16">
+      {blocks.map(({ commitment, initiatives, checkIns }, index) => (
+        <div
+          key={commitment.id}
+          className={index > 0 ? "border-t border-zinc-200 pt-16 dark:border-zinc-800" : ""}
+        >
+          <CommitmentOverview
+            commitment={commitment}
+            initiatives={initiatives}
+            checkIns={checkIns}
+            teamId={teamId}
+          />
+        </div>
+      ))}
+    </div>
   )
 }
