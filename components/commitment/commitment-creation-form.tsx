@@ -100,34 +100,8 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
 
       <div>
         <SectionHeader
-          title="Team OKR"
-          description="Title is a quick, scannable name. Team Objective is the single place for the outcome and why it matters."
-          className="mb-4"
-        />
-        <Card className="space-y-4">
-          <Input
-            name="title"
-            label="Title"
-            placeholder={TITLE_PLACEHOLDER}
-            hint='Short and easy to scan — e.g. "Reduce Churn" or "Improve Onboarding".'
-            required
-            maxLength={120}
-            defaultValue={prefill?.title}
-          />
-          <Textarea
-            name="teamObjective"
-            label="Team Objective"
-            required
-            rows={4}
-            defaultValue={prefill?.teamObjective}
-          />
-        </Card>
-      </div>
-
-      <div className="mt-14">
-        <SectionHeader
-          title="Team OKR"
-          description="Define a team objective and measurable key results for this OKR. Most teams do best with 1–2 objectives and 2–4 key results each."
+          title="Objectives"
+          description="Define the objectives and measurable key results for this Team OKR. Most teams do best with 1–2 objectives and 2–4 key results each."
           className="mb-4"
           action={
             objectiveCount < MAX_OBJECTIVES ? (
@@ -141,11 +115,23 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                   setKrCounts((prev) => ({ ...prev, [next]: 2 }))
                 }}
               >
-                + Add Team OKR
+                + Add objective
               </Button>
             ) : null
           }
         />
+
+        <Card className="mb-8">
+          <Input
+            name="title"
+            label="Title"
+            placeholder={TITLE_PLACEHOLDER}
+            hint='A short name for this Team OKR — e.g. "Reduce Churn" or "Improve Onboarding".'
+            required
+            maxLength={120}
+            defaultValue={prefill?.title}
+          />
+        </Card>
         {objectiveCount > 2 && (
           <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
             Most teams perform best with 1–2 objectives for this OKR.
