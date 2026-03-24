@@ -225,6 +225,97 @@ export async function updateKeyResultCurrent(
   revalidatePath(`/team/${kr.objective.teamOkr.teamId}`)
 }
 
+export async function updateTeamOkrTitle(
+  commitmentId: string,
+  title: string,
+) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const trimmed = title.trim()
+  if (!trimmed) return
+  if (trimmed.length > 120) return
+
+  const okr = await db.teamOkr.update({
+    where: { id: commitmentId },
+    data: { title: trimmed },
+    select: { teamId: true },
+  })
+
+  revalidatePath(`/team/${okr.teamId}`)
+}
+
+export async function updateTeamOkrContext(
+  commitmentId: string,
+  context: string,
+) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const okr = await db.teamOkr.update({
+    where: { id: commitmentId },
+    data: { teamObjective: context.trim() },
+    select: { teamId: true },
+  })
+
+  revalidatePath(`/team/${okr.teamId}`)
+}
+
+export async function updateObjectiveFields(
+  objectiveId: string,
+  data: { title?: string; description?: string | null },
+) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const updateData: Record<string, unknown> = {}
+  if (data.title !== undefined) {
+    const trimmed = data.title.trim()
+    if (!trimmed) return
+    updateData.title = trimmed
+  }
+  if (data.description !== undefined) {
+    updateData.description = data.description?.trim() || null
+  }
+
+  const obj = await db.objective.update({
+    where: { id: objectiveId },
+    data: updateData,
+    include: { teamOkr: { select: { teamId: true } } },
+  })
+
+  revalidatePath(`/team/${obj.teamOkr.teamId}`)
+}
+
+export async function updateKeyResultDefinition(
+  keyResultId: string,
+  data: { metric?: string; baseline?: number | null; target?: number },
+) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const updateData: Record<string, unknown> = {}
+  if (data.metric !== undefined) {
+    const trimmed = data.metric.trim()
+    if (!trimmed) return
+    updateData.metric = trimmed
+  }
+  if (data.baseline !== undefined) updateData.baseline = data.baseline
+  if (data.target !== undefined) updateData.target = data.target
+
+  const kr = await db.keyResult.update({
+    where: { id: keyResultId },
+    data: updateData,
+    include: {
+      objective: {
+        include: { teamOkr: { select: { teamId: true } } },
+      },
+    },
+  })
+
+  revalidatePath(`/team/${kr.objective.teamOkr.teamId}`)
+}
+
 export async function createObjective(
   prevState: ActionState,
   formData: FormData
