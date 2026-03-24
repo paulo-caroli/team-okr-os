@@ -14,6 +14,65 @@ const TITLE_PLACEHOLDER = "Activation Boost"
 const MAX_OBJECTIVES = 8
 const MAX_KR = 8
 
+const ACTIVITY_PREFIXES = ["implement", "build", "create", "launch", "deliver"]
+
+function KrHintFeedback({
+  metric,
+  target,
+  baseline,
+  deadline,
+}: {
+  metric: string
+  target: string
+  baseline: string
+  deadline: string
+}) {
+  const trimmed = metric.trim()
+  if (!trimmed) return null
+
+  const lower = trimmed.toLowerCase()
+  if (ACTIVITY_PREFIXES.some((p) => lower.startsWith(p))) {
+    return (
+      <div className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+        <p>This looks like an activity. Try describing the result instead.</p>
+        <p className="mt-0.5 text-zinc-400 dark:text-zinc-500">
+          Example: Increase adoption of this feature to 30%
+        </p>
+      </div>
+    )
+  }
+
+  if (!target.trim()) {
+    return (
+      <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+        Add a target to make this KR measurable
+      </p>
+    )
+  }
+
+  if (!baseline.trim()) {
+    return (
+      <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+        Add a baseline to track progress over time
+      </p>
+    )
+  }
+
+  if (deadline.trim()) {
+    return (
+      <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+        This KR is measurable and time-bound
+      </p>
+    )
+  }
+
+  return (
+    <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+      This KR is measurable and well defined
+    </p>
+  )
+}
+
 interface CommitmentCreationFormProps {
   teamId: string
   prefill?: CommitmentPrefill | null
@@ -59,6 +118,38 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
     })
     return init
   })
+
+  const [krMetrics, setKrMetrics] = useState<Record<string, string>>(() => {
+    if (!prefill) return {}
+    const init: Record<string, string> = {}
+    prefill.objectives.forEach((o, oi) => {
+      o.keyResults.forEach((kr, ki) => {
+        init[`${oi}_${ki}`] = kr.metric
+      })
+    })
+    return init
+  })
+  const [krTargets, setKrTargets] = useState<Record<string, string>>(() => {
+    if (!prefill) return {}
+    const init: Record<string, string> = {}
+    prefill.objectives.forEach((o, oi) => {
+      o.keyResults.forEach((kr, ki) => {
+        init[`${oi}_${ki}`] = String(kr.target)
+      })
+    })
+    return init
+  })
+  const [krBaselines, setKrBaselines] = useState<Record<string, string>>(() => {
+    if (!prefill) return {}
+    const init: Record<string, string> = {}
+    prefill.objectives.forEach((o, oi) => {
+      o.keyResults.forEach((kr, ki) => {
+        if (kr.baseline != null) init[`${oi}_${ki}`] = String(kr.baseline)
+      })
+    })
+    return init
+  })
+  const [krDeadlines, setKrDeadlines] = useState<Record<string, string>>({})
 
   const [copyInitiatives, setCopyInitiatives] = useState(false)
 
@@ -230,9 +321,18 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                             <Input
                               name={`obj_${oi}_kr_${ki}_metric`}
                               label="Metric"
-                              placeholder="What you measure"
+                              placeholder="e.g. Number of users activated, % of onboarding completed"
                               required
                               defaultValue={slotKr?.metric}
+                              onChange={(e) =>
+                                setKrMetrics((p) => ({ ...p, [ck]: e.target.value }))
+                              }
+                            />
+                            <KrHintFeedback
+                              metric={krMetrics[ck] ?? slotKr?.metric ?? ""}
+                              target={krTargets[ck] ?? (slotKr?.target != null ? String(slotKr.target) : "")}
+                              baseline={krBaselines[ck] ?? (slotKr?.baseline != null ? String(slotKr.baseline) : "")}
+                              deadline={krDeadlines[ck] ?? ""}
                             />
                             <div className="grid grid-cols-3 gap-3">
                               <Input
@@ -241,6 +341,9 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                                 step="any"
                                 label="Baseline (optional)"
                                 onBlur={(e) => handleKrBaselineBlur(oi, ki, e)}
+                                onChange={(e) =>
+                                  setKrBaselines((p) => ({ ...p, [ck]: e.target.value }))
+                                }
                                 defaultValue={
                                   slotKr?.baseline != null ? String(slotKr.baseline) : undefined
                                 }
@@ -252,6 +355,9 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                                 label="Target"
                                 required
                                 defaultValue={slotKr?.target != null ? String(slotKr.target) : undefined}
+                                onChange={(e) =>
+                                  setKrTargets((p) => ({ ...p, [ck]: e.target.value }))
+                                }
                               />
                               <Input
                                 name={`obj_${oi}_kr_${ki}_current`}
@@ -266,6 +372,15 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                                 }}
                               />
                             </div>
+                            <Input
+                              name={`obj_${oi}_kr_${ki}_deadline`}
+                              type="date"
+                              label="Deadline (optional)"
+                              hint="Defaults to the Team OKR cycle end date"
+                              onChange={(e) =>
+                                setKrDeadlines((p) => ({ ...p, [ck]: e.target.value }))
+                              }
+                            />
                           </div>
                         )
                       })}
