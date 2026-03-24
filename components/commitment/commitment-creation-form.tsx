@@ -314,73 +314,79 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                             </div>
                             <Input
                               name={`obj_${oi}_kr_${ki}_title`}
-                              label="Title"
-                              placeholder="Short name"
+                              label="Key Result"
+                              placeholder="e.g. Increase activation rate from 20% to 40%"
                               defaultValue={slotKr?.title}
                             />
-                            <Input
-                              name={`obj_${oi}_kr_${ki}_metric`}
-                              label="Metric"
-                              placeholder="e.g. Number of users activated, % of onboarding completed"
-                              required
-                              defaultValue={slotKr?.metric}
-                              onChange={(e) =>
-                                setKrMetrics((p) => ({ ...p, [ck]: e.target.value }))
-                              }
-                            />
-                            <KrHintFeedback
-                              metric={krMetrics[ck] ?? slotKr?.metric ?? ""}
-                              target={krTargets[ck] ?? (slotKr?.target != null ? String(slotKr.target) : "")}
-                              baseline={krBaselines[ck] ?? (slotKr?.baseline != null ? String(slotKr.baseline) : "")}
-                              deadline={krDeadlines[ck] ?? ""}
-                            />
-                            <div className="grid grid-cols-3 gap-3">
+                            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                              Describe the measurable outcome. The fields below help track it.
+                            </p>
+
+                            <div className="mt-3 space-y-3 rounded-lg border border-zinc-100 bg-zinc-50/30 p-3 dark:border-zinc-800 dark:bg-zinc-800/10">
                               <Input
-                                name={`obj_${oi}_kr_${ki}_baseline`}
-                                type="number"
-                                step="any"
-                                label="Baseline (optional)"
-                                onBlur={(e) => handleKrBaselineBlur(oi, ki, e)}
+                                name={`obj_${oi}_kr_${ki}_metric`}
+                                label="Metric"
+                                placeholder="e.g. Number of users activated"
+                                required
+                                defaultValue={slotKr?.metric}
                                 onChange={(e) =>
-                                  setKrBaselines((p) => ({ ...p, [ck]: e.target.value }))
-                                }
-                                defaultValue={
-                                  slotKr?.baseline != null ? String(slotKr.baseline) : undefined
+                                  setKrMetrics((p) => ({ ...p, [ck]: e.target.value }))
                                 }
                               />
-                              <Input
-                                name={`obj_${oi}_kr_${ki}_target`}
-                                type="number"
-                                step="any"
-                                label="Target"
-                                required
-                                defaultValue={slotKr?.target != null ? String(slotKr.target) : undefined}
-                                onChange={(e) =>
-                                  setKrTargets((p) => ({ ...p, [ck]: e.target.value }))
-                                }
+                              <KrHintFeedback
+                                metric={krMetrics[ck] ?? slotKr?.metric ?? ""}
+                                target={krTargets[ck] ?? (slotKr?.target != null ? String(slotKr.target) : "")}
+                                baseline={krBaselines[ck] ?? (slotKr?.baseline != null ? String(slotKr.baseline) : "")}
+                                deadline={krDeadlines[ck] ?? ""}
                               />
+                              <div className="grid grid-cols-3 gap-3">
+                                <Input
+                                  name={`obj_${oi}_kr_${ki}_baseline`}
+                                  type="number"
+                                  step="any"
+                                  label="Baseline (optional)"
+                                  onBlur={(e) => handleKrBaselineBlur(oi, ki, e)}
+                                  onChange={(e) =>
+                                    setKrBaselines((p) => ({ ...p, [ck]: e.target.value }))
+                                  }
+                                  defaultValue={
+                                    slotKr?.baseline != null ? String(slotKr.baseline) : undefined
+                                  }
+                                />
+                                <Input
+                                  name={`obj_${oi}_kr_${ki}_target`}
+                                  type="number"
+                                  step="any"
+                                  label="Target"
+                                  required
+                                  defaultValue={slotKr?.target != null ? String(slotKr.target) : undefined}
+                                  onChange={(e) =>
+                                    setKrTargets((p) => ({ ...p, [ck]: e.target.value }))
+                                  }
+                                />
+                                <Input
+                                  name={`obj_${oi}_kr_${ki}_current`}
+                                  type="number"
+                                  step="any"
+                                  label="Current"
+                                  required
+                                  value={krCurrents[ck] ?? ""}
+                                  onChange={(e) => {
+                                    setKrCurrents((p) => ({ ...p, [ck]: e.target.value }))
+                                    setKrTouched((p) => ({ ...p, [ck]: true }))
+                                  }}
+                                />
+                              </div>
                               <Input
-                                name={`obj_${oi}_kr_${ki}_current`}
-                                type="number"
-                                step="any"
-                                label="Current"
-                                required
-                                value={krCurrents[ck] ?? ""}
-                                onChange={(e) => {
-                                  setKrCurrents((p) => ({ ...p, [ck]: e.target.value }))
-                                  setKrTouched((p) => ({ ...p, [ck]: true }))
-                                }}
+                                name={`obj_${oi}_kr_${ki}_deadline`}
+                                type="date"
+                                label="Deadline (optional)"
+                                hint="Defaults to the Team OKR cycle end date"
+                                onChange={(e) =>
+                                  setKrDeadlines((p) => ({ ...p, [ck]: e.target.value }))
+                                }
                               />
                             </div>
-                            <Input
-                              name={`obj_${oi}_kr_${ki}_deadline`}
-                              type="date"
-                              label="Deadline (optional)"
-                              hint="Defaults to the Team OKR cycle end date"
-                              onChange={(e) =>
-                                setKrDeadlines((p) => ({ ...p, [ck]: e.target.value }))
-                              }
-                            />
                           </div>
                         )
                       })}
