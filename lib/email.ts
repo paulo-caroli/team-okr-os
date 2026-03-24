@@ -39,7 +39,7 @@ export async function sendInvitationEmail({
             <strong>"${teamName}"</strong> on Team OKR OS.
           </p>
           <p style="font-size: 15px; color: #52525b; line-height: 1.6; margin-bottom: 32px;">
-            Team OKR OS helps teams operate with explicit commitment to
+            Team OKR OS helps teams define clear objectives and track
             measurable results. Create your account to join the team.
           </p>
           <a

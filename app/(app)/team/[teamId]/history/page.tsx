@@ -21,17 +21,17 @@ export default async function HistoryPage({
     <div>
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Commitment History
+          Team OKR History
         </h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Past commitment cycles and their objectives.
+          Past Team OKR cycles and their objectives.
         </p>
       </div>
 
       {commitments.length === 0 ? (
         <EmptyState
           title="No completed cycles yet."
-          description="When a commitment is completed or abandoned, it will appear here."
+          description="When a Team OKR is completed or ended, it will appear here."
         />
       ) : (
         <div className="space-y-6">
@@ -49,7 +49,7 @@ export default async function HistoryPage({
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                      {titles || "Team commitment"}
+                      {titles || "Team OKR"}
                     </p>
 
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -58,7 +58,7 @@ export default async function HistoryPage({
                   </div>
 
                   <Badge variant={c.status === "COMPLETED" ? "completed" : "abandoned"}>
-                    {c.status}
+                    {c.status === "COMPLETED" ? "Completed" : "Ended"}
                   </Badge>
                 </div>
 

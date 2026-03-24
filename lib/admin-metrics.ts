@@ -244,7 +244,7 @@ export async function getCommitmentAdminRows(): Promise<CommitmentAdminRow[]> {
       COALESCE(
         NULLIF(TRIM(c."title"), ''),
         (SELECT o.title FROM "Objective" o WHERE o."commitmentId" = c.id ORDER BY o."sortOrder" ASC LIMIT 1),
-        'Commitment'
+        'Team OKR'
       ) AS "commitmentTitle",
       c.status                        AS "status",
       COUNT(DISTINCT gs.id)::bigint   AS "checkInCount",

@@ -39,7 +39,7 @@ export function CheckInTimeline({
         readOnly ? (
           <EmptyState
             title="No check-ins recorded"
-            description="No impact check-ins were recorded during this commitment cycle."
+            description="No impact check-ins were recorded during this Team OKR cycle."
           />
         ) : (
           <EmptyState

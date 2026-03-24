@@ -13,7 +13,7 @@ export function TeamNav({ teamId }: TeamNavProps) {
 
   const tabs = [
     {
-      label: "Commitment",
+      label: "Team OKR",
       href: `/team/${teamId}`,
       isActive:
         pathname === `/team/${teamId}` ||

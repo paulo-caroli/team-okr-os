@@ -50,11 +50,11 @@ export function CompleteCommitmentModal({
     >
       <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-900">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Complete this commitment?
+          Mark this Team OKR as completed?
         </h2>
 
         <p className="mt-3 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-          This will close the current commitment and archive it as completed.
+          This will close the current Team OKR and archive it as completed.
         </p>
 
         <form action={formAction} className="mt-6 space-y-4">
@@ -69,7 +69,7 @@ export function CompleteCommitmentModal({
 
           <Textarea
             name="completionNotes"
-            label="What did we learn from this commitment?"
+            label="What did we learn from this Team OKR?"
             placeholder="e.g. Conversion improved after simplifying checkout. Experiment cadence mattered."
             hint="Capture key insights — not a status report."
             required

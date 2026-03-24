@@ -271,7 +271,7 @@ export function TeamOkrsSection({ commitment, teamId }: TeamOkrsSectionProps) {
     <div>
       <SectionHeader
         title="Team OKRs"
-        description="Team objectives and measurable key results for this commitment cycle."
+        description="Team objectives and measurable key results for this Team OKR cycle."
         className="mb-4"
       />
 

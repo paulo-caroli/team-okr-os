@@ -16,7 +16,7 @@ export function NoActiveCommitment({
       {lastCommitment?.status === "ABANDONED" && (
         <div className="mb-10 rounded-lg border border-amber-200 bg-amber-50 px-6 py-4 text-left dark:border-amber-800/50 dark:bg-amber-900/10">
           <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-            The previous commitment was abandoned.
+            The previous Team OKR was ended.
           </p>
           {lastCommitment.abandonmentReason && (
             <p className="mt-1.5 text-sm leading-relaxed text-amber-700 dark:text-amber-400">
@@ -29,7 +29,7 @@ export function NoActiveCommitment({
       {lastCommitment?.status === "COMPLETED" && (
         <div className="mb-10 rounded-lg border border-emerald-200 bg-emerald-50 px-6 py-4 text-left dark:border-emerald-800/50 dark:bg-emerald-900/10">
           <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-            The previous commitment was completed.
+            The previous Team OKR was completed.
           </p>
           {lastCommitment.completionNotes && (
             <div className="mt-2 border-t border-emerald-200 pt-2 dark:border-emerald-800/50">
@@ -45,27 +45,25 @@ export function NoActiveCommitment({
       )}
 
       <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-        Team Commitment
+        Team OKR
       </p>
 
       <h1 className="mt-4 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-        This team is operating without a commitment.
+        No Team OKR yet.
       </h1>
 
       <p className="mt-4 text-base leading-relaxed text-zinc-500 dark:text-zinc-400">
-        Execution without commitment leads to activity — not impact.
-        <br />
-        Define the team objectives and key results this cycle will move.
+        Define the objectives and key results to get started.
       </p>
 
       <div className="mt-8">
         <Link href={`/team/${teamId}/commitment/new`}>
-          <Button size="lg">Start New Commitment</Button>
+          <Button size="lg">Start a Team OKR</Button>
         </Link>
       </div>
 
       <p className="mt-3 text-sm text-zinc-400 dark:text-zinc-500">
-        One active commitment per team at a time — with one or more objectives inside it.
+        Start with one Team OKR. Less is more — add more only if needed.
       </p>
 
       <div className="mt-6 flex items-center justify-center gap-4">
@@ -74,7 +72,7 @@ export function NoActiveCommitment({
             href={`/team/${teamId}/commitment/new?cloneFrom=${lastCommitment.id}`}
             className="text-sm text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
           >
-            Start from previous commitment
+            Create from a previous Team OKR
           </Link>
         )}
         <Link

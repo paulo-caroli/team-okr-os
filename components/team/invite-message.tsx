@@ -25,7 +25,7 @@ export function InviteMessage({ name, email, teamName }: InviteMessageProps) {
     "",
     `You have been added to ${teamLabel} on Team OKR OS.`,
     "",
-    `Please sign up or sign in at the link below using your email (${email}) so you can view and contribute to the team's commitments, initiatives, and check-ins.`,
+    `Please sign up or sign in at the link below using your email (${email}) so you can view and contribute to the team's objectives, initiatives, and check-ins.`,
     "",
     signUpUrl,
     "",

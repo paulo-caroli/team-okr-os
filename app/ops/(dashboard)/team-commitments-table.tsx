@@ -21,7 +21,7 @@ export function TeamCommitmentsTable({ rows }: { rows: CommitmentAdminRow[] }) {
   if (rows.length === 0) {
     return (
       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        No commitments found.
+        No Team OKRs found.
       </p>
     )
   }
@@ -41,7 +41,7 @@ export function TeamCommitmentsTable({ rows }: { rows: CommitmentAdminRow[] }) {
               Team
             </th>
             <th className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300">
-              Commitment
+              Team OKR
             </th>
             <th className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300">
               Status

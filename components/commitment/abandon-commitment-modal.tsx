@@ -50,11 +50,11 @@ export function AbandonCommitmentModal({
     >
       <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-900">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Abandon this commitment?
+          End this Team OKR?
         </h2>
 
         <p className="mt-3 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-          This will end the current commitment before the cycle is complete.
+          This will end the current Team OKR before the cycle is complete.
           <br />
           <br />
           Objective and key result definitions will remain locked as recorded.
@@ -73,7 +73,7 @@ export function AbandonCommitmentModal({
 
           <Textarea
             name="abandonmentReason"
-            label="Why are you abandoning this commitment?"
+            label="Why are you ending this Team OKR?"
             placeholder="e.g. The original metric is no longer the right indicator. We discovered a stronger constraint."
             hint="Be specific. This becomes part of the learning record."
             required
@@ -100,7 +100,7 @@ export function AbandonCommitmentModal({
               loading={isPending}
               disabled={reason.trim().length < 15}
             >
-              Confirm Abandonment
+              End Team OKR
             </Button>
           </div>
         </form>

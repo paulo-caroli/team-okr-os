@@ -10,7 +10,7 @@ function statusLabel(status: CommitmentStatus): string {
     ACTIVE: "Active",
     DRAFT: "Draft",
     COMPLETED: "Completed",
-    ABANDONED: "Abandoned",
+    ABANDONED: "Ended",
   }
   return labels[status]
 }

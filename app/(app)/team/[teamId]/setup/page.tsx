@@ -34,7 +34,7 @@ export default async function TeamSetupPage({
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
           List the people who are part of this team. Every person listed here
-          will be able to view and edit all team commitments, initiatives, and
+          will be able to view and edit all team objectives, initiatives, and
           check-ins when they sign in with their email.
         </p>
       </div>

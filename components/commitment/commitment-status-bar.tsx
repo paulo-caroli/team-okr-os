@@ -46,14 +46,14 @@ export function CommitmentStatusBar({
           variant="secondary"
           onClick={() => setCompleteModalOpen(true)}
         >
-          Complete
+          Mark as completed
         </Button>
         <button
           type="button"
           className="text-sm text-red-500 underline hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
           onClick={() => setAbandonModalOpen(true)}
         >
-          Abandon Commitment
+          End Team OKR
         </button>
       </div>
 

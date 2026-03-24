@@ -28,7 +28,7 @@ export default async function LandingPage() {
               href="/sign-up"
               className="inline-flex items-center rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
-              Start a Team Commitment
+              Start a Team OKR
             </Link>
             <div className="mt-4">
               <Link
@@ -55,7 +55,7 @@ export default async function LandingPage() {
           <ul className="mt-6 space-y-3 text-zinc-700 dark:text-zinc-300">
             <li>Team objectives with key results (Team OKR model)</li>
             <li>Structured impact conversations (GRIP)</li>
-            <li>Learning captured across commitment cycles</li>
+            <li>Learning captured across Team OKR cycles</li>
           </ul>
         </section>
 

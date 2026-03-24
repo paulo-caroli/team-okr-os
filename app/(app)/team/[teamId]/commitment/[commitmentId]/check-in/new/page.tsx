@@ -26,7 +26,7 @@ export default async function NewCheckInPage({
           href={`/team/${teamId}`}
           className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
         >
-          ← Back to commitment
+          ← Back to Team OKR
         </Link>
         <h1 className="mt-3 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
           Impact Check-in (GRIP)

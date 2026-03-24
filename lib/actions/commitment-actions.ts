@@ -400,7 +400,7 @@ export async function abandonCommitment(
   const commitmentId = formData.get("commitmentId") as string
   const reason = (formData.get("abandonmentReason") as string)?.trim()
 
-  if (!reason) return { error: "A reason for abandonment is required." }
+  if (!reason) return { error: "A reason is required." }
   if (reason.length < 15) {
     return { error: "Please provide a more detailed reason (at least 15 characters)." }
   }
@@ -417,7 +417,7 @@ export async function abandonCommitment(
     return { error: "Team OKR not found." }
   }
   if (teamOkr.status !== "ACTIVE") {
-    return { error: "Only active Team OKRs can be abandoned." }
+    return { error: "Only active Team OKRs can be ended." }
   }
 
   await db.teamOkr.update({

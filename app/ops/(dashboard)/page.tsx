@@ -44,7 +44,7 @@ export default async function AdminDashboardPage() {
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Total commitments
+            Total Team OKRs
           </p>
           <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
             {totals.commitments}
@@ -68,10 +68,10 @@ export default async function AdminDashboardPage() {
 
       <section>
         <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Team Commitments
+          Team OKRs
         </h2>
         <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-          One row per commitment, including owner, team, status, activity counts, and last activity.
+          One row per Team OKR, including owner, team, status, activity counts, and last activity.
         </p>
         <TeamCommitmentsTable rows={commitments} />
       </section>

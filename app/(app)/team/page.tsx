@@ -55,9 +55,9 @@ export default async function TeamsPage() {
                 </p>
               </div>
               {team.hasActiveCommitment ? (
-                <Badge variant="active">Active commitment</Badge>
+                <Badge variant="active">Active Team OKR</Badge>
               ) : (
-                <Badge variant="default">No commitment</Badge>
+                <Badge variant="default">No Team OKR</Badge>
               )}
             </Card>
           </Link>
