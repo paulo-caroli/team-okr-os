@@ -178,7 +178,7 @@ function ObjectiveCard({
       <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
         <div
           className="h-full rounded-full bg-emerald-600 transition-all dark:bg-emerald-500"
-          style={{ width: `${pct}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
         />
       </div>
 

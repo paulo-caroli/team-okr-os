@@ -48,15 +48,28 @@ export interface CommitmentView {
 /** @alias CommitmentView — domain Team OKR */
 export type TeamOkrView = CommitmentView
 
-/** 0–100 progress for one key result (clamped). */
-export function keyResultProgressPercent(kr: KeyResult): number {
-  const baseline = kr.baseline ?? kr.target
-  const span = kr.target - baseline
-  if (span === 0) {
-    return kr.current >= kr.target ? 100 : 0
+/**
+ * Core progress ratio for a key result.
+ * Returns a decimal (e.g. 0.75 = 75%). Not clamped — may be negative or > 1.
+ */
+export function calculateProgress(
+  current: number,
+  target: number,
+  baseline: number | null,
+): number {
+  if (baseline !== null && baseline !== undefined) {
+    const denominator = target - baseline
+    if (denominator === 0) return 0
+    return (current - baseline) / denominator
   }
-  const raw = ((kr.current - baseline) / span) * 100
-  return Math.min(100, Math.max(0, raw))
+
+  if (!target || target === 0) return 0
+  return current / target
+}
+
+/** Progress percentage for one key result. Not clamped — may be negative or exceed 100. */
+export function keyResultProgressPercent(kr: KeyResult): number {
+  return calculateProgress(kr.current, kr.target, kr.baseline) * 100
 }
 
 /** Average KR progress; 0 if there are no key results. */

@@ -5,6 +5,7 @@ import { TeamSettingsForm } from "@/components/team/team-settings-form"
 import { MemberList } from "@/components/team/member-list"
 import { InviteMemberForm } from "@/components/team/invite-member-form"
 import { PendingInvitations } from "@/components/team/pending-invitations"
+import { CheckInCadenceForm } from "@/components/team/check-in-cadence-form"
 
 export default async function TeamSettingsPage({
   params,
@@ -42,6 +43,22 @@ export default async function TeamSettingsPage({
           Team name
         </h2>
         <TeamSettingsForm teamId={teamId} teamName={team.name} />
+      </div>
+
+      {/* Check-in cadence */}
+      <div className="border-t border-zinc-200 pt-10 dark:border-zinc-800">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          Check-in cadence
+        </h2>
+        <p className="mb-4 text-sm text-zinc-400 dark:text-zinc-500">
+          How often the team checks in on Team OKR progress.
+        </p>
+        <CheckInCadenceForm
+          teamId={teamId}
+          defaultFrequency={team.checkInFrequency}
+          defaultDay={team.checkInDay}
+          defaultTime={team.checkInTime}
+        />
       </div>
 
       {/* Current members */}

@@ -42,7 +42,14 @@ function KrHintFeedback({
     )
   }
 
-  if (!target.trim()) {
+  const targetStr = target.trim()
+  const baselineStr = baseline.trim()
+  const targetNum = targetStr ? parseFloat(targetStr) : NaN
+  const baselineNum = baselineStr ? parseFloat(baselineStr) : NaN
+  const hasTarget = targetStr !== "" && !Number.isNaN(targetNum)
+  const hasBaseline = baselineStr !== "" && !Number.isNaN(baselineNum)
+
+  if (!hasTarget) {
     return (
       <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
         Add a target to make this KR measurable
@@ -50,7 +57,23 @@ function KrHintFeedback({
     )
   }
 
-  if (!baseline.trim()) {
+  if (targetNum === 0 && !hasBaseline) {
+    return (
+      <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+        Target is 0. Add a baseline to track progress correctly
+      </p>
+    )
+  }
+
+  if (hasBaseline && targetNum === baselineNum) {
+    return (
+      <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+        Target should be different from baseline
+      </p>
+    )
+  }
+
+  if (!hasBaseline) {
     return (
       <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
         Add a baseline to track progress over time
@@ -264,13 +287,18 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                   rows={2}
                   defaultValue={prefillObj?.title}
                 />
-                <Textarea
-                  name={`obj_${oi}_description`}
-                  label="Details (optional)"
-                  rows={2}
-                  placeholder="Optional context for this objective..."
-                  defaultValue={prefillObj?.description ?? undefined}
-                />
+                <div>
+                  <Textarea
+                    name={`obj_${oi}_description`}
+                    label="Strategic Context (optional)"
+                    rows={2}
+                    placeholder="Optional context for this objective..."
+                    defaultValue={prefillObj?.description ?? undefined}
+                  />
+                  <p className="mt-1.5 text-xs text-zinc-400 dark:text-zinc-500">
+                    Why this matters and how it connects to the bigger picture
+                  </p>
+                </div>
 
                 <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
                   <div className="mb-3 flex items-center justify-between">
