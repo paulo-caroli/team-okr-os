@@ -36,20 +36,16 @@ export default async function HistoryPage({
       ) : (
         <div className="space-y-6">
           {commitments.map((c) => {
-            const titles = c.objectives.map((o) => o.title).join(" · ")
-            const avgProgress =
-              c.objectives.length > 0
-                ? Math.round(
-                    c.objectives.reduce((acc, o) => acc + objectiveProgressPercent(o), 0) /
-                      c.objectives.length
-                  )
-                : 0
+            const objective = c.objectives[0]
+            const avgProgress = objective
+              ? Math.round(objectiveProgressPercent(objective))
+              : 0
             return (
               <Card key={c.id}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                      {titles || "Team OKR"}
+                      {objective?.title || "Team OKR"}
                     </p>
 
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">

@@ -6,11 +6,10 @@ import {
   objectiveProgressPercent,
   keyResultProgressPercent,
 } from "@/lib/domain/commitment"
-import { updateKeyResultCurrent, createObjective, createKeyResult } from "@/lib/actions/commitment-actions"
+import { updateKeyResultCurrent, createKeyResult } from "@/lib/actions/commitment-actions"
 import { SectionHeader } from "@/components/ui/section-header"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 
 interface TeamOkrsSectionProps {
@@ -217,86 +216,30 @@ function ObjectiveCard({
   )
 }
 
-function AddObjectiveForm({ commitmentId, teamId }: { commitmentId: string; teamId: string }) {
-  const [state, formAction, isPending] = useActionState(createObjective, null)
-  const [open, setOpen] = useState(false)
-
-  if (!open) {
-    return (
-      <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
-        + Add Team Objective
-      </Button>
-    )
-  }
-
-  return (
-    <Card className="p-5">
-      <form action={formAction} className="space-y-4">
-        <input type="hidden" name="teamId" value={teamId} />
-        <input type="hidden" name="commitmentId" value={commitmentId} />
-        {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
-        )}
-        <Textarea
-          name="title"
-          label="Team Objective"
-          placeholder="A clear and specific outcome the team commits to achieving this cycle."
-          hint="A clear and specific outcome the team commits to achieving this cycle."
-          required
-          rows={2}
-        />
-        <Textarea
-          name="description"
-          label="Details (optional)"
-          rows={2}
-          placeholder="Optional context..."
-        />
-        <div className="flex gap-2">
-          <Button type="submit" loading={isPending}>
-            Save objective
-          </Button>
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </Card>
-  )
-}
-
 export function TeamOkrsSection({ commitment, teamId }: TeamOkrsSectionProps) {
   const readOnly = commitment.status !== "ACTIVE"
 
   return (
     <div>
       <SectionHeader
-        title="Team OKRs"
-        description="Team objectives and measurable key results for this Team OKR cycle."
+        title="Objective"
+        description="The objective and measurable key results for this Team OKR."
         className="mb-4"
       />
 
-      {commitment.objectives.length > 2 && (
-        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-          Most teams perform best with 1–2 objectives.
-        </p>
-      )}
-
-      <div className="space-y-6">
-        {commitment.objectives.map((objective) => (
-          <ObjectiveCard
-            key={objective.id}
-            objective={objective}
-            commitmentId={commitment.id}
-            teamId={teamId}
-            readOnly={readOnly}
-          />
-        ))}
-      </div>
-
-      {!readOnly && (
-        <div className="mt-6">
-          <AddObjectiveForm commitmentId={commitment.id} teamId={teamId} />
-        </div>
+      {commitment.objectives.length > 0 ? (
+        <ObjectiveCard
+          objective={commitment.objectives[0]}
+          commitmentId={commitment.id}
+          teamId={teamId}
+          readOnly={readOnly}
+        />
+      ) : (
+        <Card className="p-5">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            No objective defined yet.
+          </p>
+        </Card>
       )}
     </div>
   )

@@ -407,56 +407,54 @@ export function GripForm({
                 Evidence
               </div>
               <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-700 dark:bg-zinc-800/30">
-                <div className="space-y-6">
-                  {objectives.map((objective) => (
-                    <div key={objective.id} className="space-y-3">
-                      <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                          Team Objective
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                          {objective.title}
-                        </p>
-                      </div>
-                      {objective.keyResults.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                            Key Results
-                          </p>
-                          {objective.keyResults.map((kr) => (
-                            <div
-                              key={kr.id}
-                              className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-                            >
-                              <input type="hidden" name="keyResultIds" value={kr.id} />
-                              <div className="flex items-center justify-between gap-4">
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                    {kr.title}
-                                  </p>
-                                  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kr.metric}</p>
-                                  <div className="mt-0.5 flex gap-3 text-xs text-zinc-400 dark:text-zinc-500">
-                                    <span>Current: {kr.current}</span>
-                                    <span>Target: {kr.target}</span>
-                                    {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
-                                  </div>
-                                </div>
-                                <Input
-                                  name={`kr_${kr.id}`}
-                                  type="number"
-                                  step="any"
-                                  defaultValue={String(kr.current)}
-                                  placeholder="Value"
-                                  className="h-8 w-28"
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                {objectives.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                        Objective
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                        {objectives[0].title}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                    {objectives[0].keyResults.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                          Key Results
+                        </p>
+                        {objectives[0].keyResults.map((kr) => (
+                          <div
+                            key={kr.id}
+                            className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                          >
+                            <input type="hidden" name="keyResultIds" value={kr.id} />
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                  {kr.title}
+                                </p>
+                                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kr.metric}</p>
+                                <div className="mt-0.5 flex gap-3 text-xs text-zinc-400 dark:text-zinc-500">
+                                  <span>Current: {kr.current}</span>
+                                  <span>Target: {kr.target}</span>
+                                  {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
+                                </div>
+                              </div>
+                              <Input
+                                name={`kr_${kr.id}`}
+                                type="number"
+                                step="any"
+                                defaultValue={String(kr.current)}
+                                placeholder="Value"
+                                className="h-8 w-28"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
