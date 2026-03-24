@@ -191,7 +191,7 @@ export async function cancelInvitation(teamId: string, invitationId: string) {
   revalidatePath(`/team/${teamId}/settings`)
 }
 
-const VALID_FREQUENCIES = ["daily", "weekly", "bi-weekly", "monthly"]
+const VALID_FREQUENCIES = ["daily", "weekly", "monthly", "quarterly"]
 const VALID_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 export async function updateCheckInCadence(
@@ -203,16 +203,15 @@ export async function updateCheckInCadence(
 
   const teamId = formData.get("teamId") as string
   const frequency = (formData.get("checkInFrequency") as string)?.trim().toLowerCase()
-  const day = (formData.get("checkInDay") as string)?.trim().toLowerCase() || null
+  const rawDay = (formData.get("checkInDay") as string)?.trim() || null
   const time = (formData.get("checkInTime") as string)?.trim() || null
 
   if (!frequency || !VALID_FREQUENCIES.includes(frequency)) {
     return { error: "Please select a valid frequency." }
   }
 
-  const needsDay = frequency === "weekly" || frequency === "bi-weekly"
-  if (needsDay && (!day || !VALID_DAYS.includes(day))) {
-    return { error: "Please select a day for this frequency." }
+  if (frequency === "weekly" && (!rawDay || !VALID_DAYS.includes(rawDay.toLowerCase()))) {
+    return { error: "Please select a day of the week." }
   }
 
   const member = await db.teamMember.findUnique({
@@ -220,11 +219,15 @@ export async function updateCheckInCadence(
   })
   if (!member) return { error: "You are not a member of this team." }
 
+  let dayValue: string | null = null
+  if (frequency === "weekly") dayValue = rawDay!.toLowerCase()
+  else if (frequency === "monthly" || frequency === "quarterly") dayValue = rawDay
+
   await db.team.update({
     where: { id: teamId },
     data: {
       checkInFrequency: frequency,
-      checkInDay: needsDay ? day : null,
+      checkInDay: dayValue,
       checkInTime: time || null,
     },
   })

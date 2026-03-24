@@ -73,7 +73,7 @@ export function keyResultProgressPercent(kr: KeyResult): number {
 }
 
 /** Average KR progress; 0 if there are no key results. */
-export function objectiveProgressPercent(objective: ObjectiveView): number {
+export function aggregateKeyResultProgress(objective: ObjectiveView): number {
   const krs = objective.keyResults
   if (krs.length === 0) return 0
   const sum = krs.reduce((acc, kr) => acc + keyResultProgressPercent(kr), 0)

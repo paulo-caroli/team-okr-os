@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 const FREQUENCY_OPTIONS = [
   { value: "daily", label: "Daily" },
   { value: "weekly", label: "Weekly" },
-  { value: "bi-weekly", label: "Bi-weekly" },
   { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
 ]
 
 const DAY_OPTIONS = [
@@ -39,8 +39,6 @@ export function CheckInCadenceForm({
   const [state, formAction, isPending] = useActionState(updateCheckInCadence, null)
   const [frequency, setFrequency] = useState(defaultFrequency ?? "")
 
-  const showDayField = frequency === "weekly" || frequency === "bi-weekly"
-
   return (
     <form action={formAction} className="max-w-md space-y-4">
       <input type="hidden" name="teamId" value={teamId} />
@@ -61,10 +59,10 @@ export function CheckInCadenceForm({
         required
       />
 
-      {showDayField && (
+      {frequency === "weekly" && (
         <Select
           name="checkInDay"
-          label="Day"
+          label="Day of the week"
           options={DAY_OPTIONS}
           placeholder="Select day"
           defaultValue={defaultDay ?? ""}
@@ -72,12 +70,28 @@ export function CheckInCadenceForm({
         />
       )}
 
-      <Input
-        name="checkInTime"
-        label="Time (optional)"
-        type="time"
-        defaultValue={defaultTime ?? ""}
-      />
+      {(frequency === "monthly" || frequency === "quarterly") && (
+        <div>
+          <Input
+            name="checkInDay"
+            label="When"
+            placeholder="e.g. First Monday of the month"
+            defaultValue={defaultDay ?? ""}
+          />
+          <p className="mt-1.5 text-xs text-zinc-400 dark:text-zinc-500">
+            Describe when the check-in should happen
+          </p>
+        </div>
+      )}
+
+      {frequency && (
+        <Input
+          name="checkInTime"
+          label="Time (optional)"
+          type="time"
+          defaultValue={defaultTime ?? ""}
+        />
+      )}
 
       <Button type="submit" size="sm" loading={isPending}>
         Save

@@ -3,7 +3,7 @@
 import { useState, useActionState } from "react"
 import type { CommitmentView, KeyResult, ObjectiveView } from "@/lib/domain/commitment"
 import {
-  objectiveProgressPercent,
+  aggregateKeyResultProgress,
   keyResultProgressPercent,
 } from "@/lib/domain/commitment"
 import { updateKeyResultCurrent, createKeyResult } from "@/lib/actions/commitment-actions"
@@ -153,7 +153,7 @@ function ObjectiveCard({
   teamId: string
   readOnly: boolean
 }) {
-  const pct = Math.round(objectiveProgressPercent(objective))
+  const pct = Math.round(aggregateKeyResultProgress(objective))
 
   return (
     <Card className="p-5">
@@ -170,7 +170,7 @@ function ObjectiveCard({
           )}
         </div>
         <div className="shrink-0 text-right">
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">Objective progress</span>
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">Progress</span>
           <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{pct}%</p>
         </div>
       </div>

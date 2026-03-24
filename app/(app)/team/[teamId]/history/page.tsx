@@ -1,6 +1,6 @@
 import { requireTeamAccess } from "@/lib/auth-guard"
 import { getCommitmentHistory } from "@/lib/queries/commitment-queries"
-import { objectiveProgressPercent } from "@/lib/domain/commitment"
+import { aggregateKeyResultProgress } from "@/lib/domain/commitment"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -38,7 +38,7 @@ export default async function HistoryPage({
           {commitments.map((c) => {
             const objective = c.objectives[0]
             const avgProgress = objective
-              ? Math.round(objectiveProgressPercent(objective))
+              ? Math.round(aggregateKeyResultProgress(objective))
               : 0
             return (
               <Card key={c.id}>
@@ -59,7 +59,7 @@ export default async function HistoryPage({
                 </div>
 
                 <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">
-                  Avg. objective progress (from key results): {avgProgress}%
+                  Progress (based on key results): {avgProgress}%
                 </p>
 
                 <div className="mt-4 flex items-center justify-between">
