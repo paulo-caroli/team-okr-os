@@ -3,6 +3,7 @@
 import type { CommitmentView } from "@/lib/domain/commitment"
 import { CompleteCommitmentModal } from "./complete-commitment-modal"
 import { AbandonCommitmentModal } from "./abandon-commitment-modal"
+import { CreateTeamOkrButton } from "./create-team-okr-button"
 import { setPrimaryTeamOkr } from "@/lib/actions/commitment-actions"
 import { Button } from "@/components/ui/button"
 import { useState, useTransition } from "react"
@@ -27,6 +28,13 @@ export function CommitmentStatusBar({
   return (
     <>
       <div className="flex flex-wrap items-center justify-end gap-3">
+        <CreateTeamOkrButton
+          teamId={teamId}
+          hasActiveOkr
+          variant="ghost"
+          size="sm"
+          label="New Team OKR"
+        />
         {!commitment.isPrimary && (
           <Button
             size="sm"

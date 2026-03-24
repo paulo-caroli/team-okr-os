@@ -4,6 +4,7 @@ import { getInitiatives } from "@/lib/queries/initiative-queries"
 import { getCheckIns } from "@/lib/queries/check-in-queries"
 import { CommitmentOverview } from "@/components/commitment/commitment-overview"
 import { NoActiveCommitment } from "@/components/commitment/no-active-commitment"
+import { CreateTeamOkrButton } from "@/components/commitment/create-team-okr-button"
 
 export default async function TeamHubPage({
   params,
@@ -35,6 +36,13 @@ export default async function TeamHubPage({
 
   return (
     <div className="space-y-16">
+      <div className="flex justify-end">
+        <CreateTeamOkrButton
+          teamId={teamId}
+          hasActiveOkr={activeOkrs.length > 0}
+        />
+      </div>
+
       {blocks.map(({ commitment, initiatives, checkIns }, index) => (
         <div
           key={commitment.id}
