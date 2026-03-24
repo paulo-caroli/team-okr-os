@@ -6,38 +6,32 @@ import {
   aggregateKeyResultProgress,
   keyResultProgressPercent,
 } from "@/lib/domain/commitment"
-import {
-  updateKeyResultCurrent,
-  updateKeyResultDefinition,
-  updateObjectiveFields,
-  createKeyResult,
-} from "@/lib/actions/commitment-actions"
+import { updateKeyResultCurrent, createKeyResult } from "@/lib/actions/commitment-actions"
 import { SectionHeader } from "@/components/ui/section-header"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogHeader } from "@/components/ui/dialog"
 
 interface TeamOkrsSectionProps {
   commitment: CommitmentView
   teamId: string
+  editMode?: boolean
 }
 
 function KeyResultRow({
   kr,
   readOnly,
-  hasCheckIns,
+  editMode,
+  krIndex,
 }: {
   kr: KeyResult
   readOnly: boolean
-  hasCheckIns: boolean
+  editMode?: boolean
+  krIndex: number
 }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [editingDef, setEditingDef] = useState(false)
-  const [savingDef, setSavingDef] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
 
   async function handleSave(formData: FormData) {
     setSaving(true)
@@ -52,151 +46,89 @@ function KeyResultRow({
     setSaving(false)
   }
 
-  function handleEditDefClick() {
-    if (hasCheckIns) {
-      setConfirmOpen(true)
-    } else {
-      setEditingDef(true)
-    }
-  }
-
-  async function handleDefSave(formData: FormData) {
-    setSavingDef(true)
-    const metric = (formData.get("metric") as string)?.trim()
-    const baselineRaw = (formData.get("baseline") as string)?.trim()
-    const targetRaw = (formData.get("target") as string)?.trim()
-
-    if (!metric || !targetRaw) {
-      setSavingDef(false)
-      return
-    }
-
-    const baseline = baselineRaw ? parseFloat(baselineRaw) : null
-    const target = parseFloat(targetRaw)
-    if (Number.isNaN(target)) {
-      setSavingDef(false)
-      return
-    }
-
-    await updateKeyResultDefinition(kr.id, { metric, baseline, target })
-    setEditingDef(false)
-    setSavingDef(false)
-  }
-
   const krPct = Math.round(keyResultProgressPercent(kr))
+
+  if (editMode) {
+    return (
+      <div className="rounded-lg border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+        <input type="hidden" name={`kr_${krIndex}_id`} value={kr.id} />
+        <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
+        <Input
+          name={`kr_${krIndex}_metric`}
+          label="Metric"
+          defaultValue={kr.metric}
+          required
+        />
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <Input
+            name={`kr_${krIndex}_baseline`}
+            type="number"
+            step="any"
+            label="Baseline (optional)"
+            defaultValue={kr.baseline !== null ? String(kr.baseline) : ""}
+          />
+          <Input
+            name={`kr_${krIndex}_target`}
+            type="number"
+            step="any"
+            label="Target"
+            defaultValue={String(kr.target)}
+            required
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/30">
-      {editingDef ? (
-        <form action={handleDefSave} className="space-y-3">
-          <Input
-            name="metric"
-            label="Metric"
-            defaultValue={kr.metric}
-            required
-            autoFocus
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              name="baseline"
-              type="number"
-              step="any"
-              label="Baseline (optional)"
-              defaultValue={kr.baseline !== null ? String(kr.baseline) : ""}
-            />
-            <Input
-              name="target"
-              type="number"
-              step="any"
-              label="Target"
-              defaultValue={String(kr.target)}
-              required
-            />
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
+          <div className="mt-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+              Metric
+            </span>
+            <p className="mt-0.5 text-sm text-zinc-700 dark:text-zinc-300">{kr.metric}</p>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" type="submit" loading={savingDef}>Save</Button>
-            <Button size="sm" variant="ghost" type="button" onClick={() => setEditingDef(false)}>Cancel</Button>
-          </div>
-        </form>
-      ) : (
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
-            <div className="mt-1">
-              <span className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                Metric
-              </span>
-              <p className="mt-0.5 text-sm text-zinc-700 dark:text-zinc-300">{kr.metric}</p>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-              {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
-              <span>Target: {kr.target}</span>
-              <span className="font-medium text-zinc-600 dark:text-zinc-300">Progress: {krPct}%</span>
-              {!readOnly && (
-                <button
-                  type="button"
-                  className="text-xs text-zinc-400 underline decoration-dashed underline-offset-2 hover:text-zinc-600 dark:hover:text-zinc-300"
-                  onClick={handleEditDefClick}
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="text-right">
-            {readOnly ? (
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{kr.current}</span>
-            ) : editing ? (
-              <form action={handleSave} className="flex items-center gap-2">
-                <Input
-                  name="currentValue"
-                  type="number"
-                  step="any"
-                  defaultValue={String(kr.current)}
-                  placeholder="Value"
-                  className="h-7 w-24 text-xs"
-                  required
-                  autoFocus
-                />
-                <Button size="sm" type="submit" loading={saving}>
-                  Save
-                </Button>
-                <Button size="sm" variant="ghost" type="button" onClick={() => setEditing(false)}>
-                  Cancel
-                </Button>
-              </form>
-            ) : (
-              <span
-                className="cursor-pointer text-sm font-medium text-zinc-700 underline decoration-dashed underline-offset-4 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
-                onClick={() => setEditing(true)}
-              >
-                {kr.current}
-              </span>
-            )}
+          <div className="mt-1 flex flex-wrap items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+            {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
+            <span>Target: {kr.target}</span>
+            <span className="font-medium text-zinc-600 dark:text-zinc-300">Progress: {krPct}%</span>
           </div>
         </div>
-      )}
-
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogHeader
-          title="Edit Key Result?"
-          description="This Key Result already has progress updates. Editing it may affect historical tracking."
-        />
-        <div className="flex justify-end gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setConfirmOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              setConfirmOpen(false)
-              setEditingDef(true)
-            }}
-          >
-            Edit anyway
-          </Button>
+        <div className="text-right">
+          {readOnly ? (
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{kr.current}</span>
+          ) : editing ? (
+            <form action={handleSave} className="flex items-center gap-2">
+              <Input
+                name="currentValue"
+                type="number"
+                step="any"
+                defaultValue={String(kr.current)}
+                placeholder="Value"
+                className="h-7 w-24 text-xs"
+                required
+                autoFocus
+              />
+              <Button size="sm" type="submit" loading={saving}>
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" type="button" onClick={() => setEditing(false)}>
+                Cancel
+              </Button>
+            </form>
+          ) : (
+            <span
+              className="cursor-pointer text-sm font-medium text-zinc-700 underline decoration-dashed underline-offset-4 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+              onClick={() => setEditing(true)}
+            >
+              {kr.current}
+            </span>
+          )}
         </div>
-      </Dialog>
+      </div>
     </div>
   )
 }
@@ -253,30 +185,15 @@ function ObjectiveCard({
   commitmentId,
   teamId,
   readOnly,
-  hasCheckIns,
+  editMode,
 }: {
   objective: ObjectiveView
   commitmentId: string
   teamId: string
   readOnly: boolean
-  hasCheckIns: boolean
+  editMode?: boolean
 }) {
   const pct = Math.round(aggregateKeyResultProgress(objective))
-  const [editingObj, setEditingObj] = useState(false)
-  const [savingObj, setSavingObj] = useState(false)
-
-  async function handleObjSave(formData: FormData) {
-    const title = (formData.get("objTitle") as string)?.trim()
-    if (!title) return
-    setSavingObj(true)
-    const description = (formData.get("objDescription") as string) ?? ""
-    await updateObjectiveFields(objective.id, {
-      title,
-      description: description.trim() || null,
-    })
-    setEditingObj(false)
-    setSavingObj(false)
-  }
 
   return (
     <Card className="p-5">
@@ -286,14 +203,14 @@ function ObjectiveCard({
             Team Objective
           </p>
 
-          {!readOnly && editingObj ? (
-            <form action={handleObjSave} className="mt-2 space-y-3">
+          {editMode ? (
+            <div className="mt-2 space-y-3">
+              <input type="hidden" name="objectiveId" value={objective.id} />
               <Input
                 name="objTitle"
                 label="Objective"
                 defaultValue={objective.title}
                 required
-                autoFocus
               />
               <Textarea
                 name="objDescription"
@@ -302,39 +219,21 @@ function ObjectiveCard({
                 rows={2}
                 placeholder="Why this matters and how it connects to the bigger picture"
               />
-              <div className="flex gap-2">
-                <Button size="sm" type="submit" loading={savingObj}>Save</Button>
-                <Button size="sm" variant="ghost" type="button" onClick={() => setEditingObj(false)}>Cancel</Button>
-              </div>
-            </form>
+            </div>
           ) : (
             <>
-              <h3
-                className={`mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100${!readOnly ? " cursor-pointer decoration-dashed hover:underline hover:underline-offset-4" : ""}`}
-                onClick={!readOnly ? () => setEditingObj(true) : undefined}
-              >
+              <h3 className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                 {objective.title}
               </h3>
               {objective.description && (
-                <p
-                  className={`mt-2 text-sm text-zinc-600 dark:text-zinc-400${!readOnly ? " cursor-pointer decoration-dashed hover:underline hover:underline-offset-4" : ""}`}
-                  onClick={!readOnly ? () => setEditingObj(true) : undefined}
-                >
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                   {objective.description}
-                </p>
-              )}
-              {!readOnly && !objective.description && (
-                <p
-                  className="mt-2 cursor-pointer text-sm italic text-zinc-400 decoration-dashed hover:underline hover:underline-offset-4 dark:text-zinc-500"
-                  onClick={() => setEditingObj(true)}
-                >
-                  Add strategic context...
                 </p>
               )}
             </>
           )}
         </div>
-        {!editingObj && (
+        {!editMode && (
           <div className="shrink-0 text-right">
             <span className="text-xs text-zinc-400 dark:text-zinc-500">Progress</span>
             <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{pct}%</p>
@@ -342,7 +241,7 @@ function ObjectiveCard({
         )}
       </div>
 
-      {!editingObj && (
+      {!editMode && (
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
           <div
             className="h-full rounded-full bg-emerald-600 transition-all dark:bg-emerald-500"
@@ -365,13 +264,19 @@ function ObjectiveCard({
           </p>
         ) : (
           <div className="mt-4 space-y-3">
-            {objective.keyResults.map((kr) => (
-              <KeyResultRow key={kr.id} kr={kr} readOnly={readOnly} hasCheckIns={hasCheckIns} />
+            {objective.keyResults.map((kr, i) => (
+              <KeyResultRow
+                key={kr.id}
+                kr={kr}
+                readOnly={readOnly}
+                editMode={editMode}
+                krIndex={i}
+              />
             ))}
           </div>
         )}
 
-        {!readOnly && (
+        {!readOnly && !editMode && (
           <div className="mt-4">
             <AddKeyResultForm
               objectiveId={objective.id}
@@ -385,9 +290,8 @@ function ObjectiveCard({
   )
 }
 
-export function TeamOkrsSection({ commitment, teamId }: TeamOkrsSectionProps) {
+export function TeamOkrsSection({ commitment, teamId, editMode }: TeamOkrsSectionProps) {
   const readOnly = commitment.status !== "ACTIVE"
-  const hasCheckIns = commitment.checkInCount > 0
 
   return (
     <div>
@@ -403,7 +307,7 @@ export function TeamOkrsSection({ commitment, teamId }: TeamOkrsSectionProps) {
           commitmentId={commitment.id}
           teamId={teamId}
           readOnly={readOnly}
-          hasCheckIns={hasCheckIns}
+          editMode={editMode}
         />
       ) : (
         <Card className="p-5">

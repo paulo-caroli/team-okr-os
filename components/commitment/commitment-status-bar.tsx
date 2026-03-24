@@ -11,11 +11,13 @@ import { useState, useTransition } from "react"
 interface CommitmentStatusBarProps {
   commitment: CommitmentView
   teamId: string
+  onEdit?: () => void
 }
 
 export function CommitmentStatusBar({
   commitment,
   teamId,
+  onEdit,
 }: CommitmentStatusBarProps) {
   const [completeModalOpen, setCompleteModalOpen] = useState(false)
   const [abandonModalOpen, setAbandonModalOpen] = useState(false)
@@ -28,6 +30,11 @@ export function CommitmentStatusBar({
   return (
     <>
       <div className="flex flex-wrap items-center justify-end gap-3">
+        {onEdit && (
+          <Button size="sm" variant="secondary" onClick={onEdit}>
+            Edit Team OKR
+          </Button>
+        )}
         <CreateTeamOkrButton
           teamId={teamId}
           hasActiveOkr
