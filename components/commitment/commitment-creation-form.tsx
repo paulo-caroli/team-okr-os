@@ -100,25 +100,9 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
 
       <div>
         <SectionHeader
-          title="Objectives"
-          description="Define the objectives and measurable key results for this Team OKR. Most teams do best with 1–2 objectives and 2–4 key results each."
+          title="Team OKR"
+          description="Define the objective and measurable key results for this cycle."
           className="mb-4"
-          action={
-            objectiveCount < MAX_OBJECTIVES ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const next = objectiveCount
-                  setObjectiveCount((c) => c + 1)
-                  setKrCounts((prev) => ({ ...prev, [next]: 2 }))
-                }}
-              >
-                + Add objective
-              </Button>
-            ) : null
-          }
         />
 
         <Card className="mb-8">
@@ -132,12 +116,6 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
             defaultValue={prefill?.title}
           />
         </Card>
-        {objectiveCount > 2 && (
-          <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-            Most teams perform best with 1–2 objectives for this OKR.
-          </p>
-        )}
-
         <div className="space-y-8">
           {Array.from({ length: objectiveCount }).map((_, oi) => {
             const prefillObj = prefill?.objectives[oi]
