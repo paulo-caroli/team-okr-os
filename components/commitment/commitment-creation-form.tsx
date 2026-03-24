@@ -207,17 +207,34 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
             defaultValue={prefill?.title}
           />
         </Card>
+
+        <div className="mb-8">
+          <SectionHeader
+            title="Cycle"
+            description="The time boundary for this Team OKR"
+            className="mb-4"
+          />
+          <Card>
+            <Input
+              name="cycleLabel"
+              label="Cycle label (optional)"
+              placeholder="e.g., Q1 2026, Sprint 4, 6-Week Cycle"
+            />
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <Input name="cycleStartDate" type="date" label="Start date" required />
+              <Input name="cycleEndDate" type="date" label="End date" required />
+            </div>
+          </Card>
+        </div>
+
         <div className="space-y-8">
           {Array.from({ length: objectiveCount }).map((_, oi) => {
             const prefillObj = prefill?.objectives[oi]
             const krSlotCount = krCounts[oi] ?? 2
             return (
               <Card key={oi} className="space-y-4 p-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
-                    Objective {oi + 1}
-                  </span>
-                  {objectiveCount > 1 && oi === objectiveCount - 1 && (
+                {objectiveCount > 1 && oi === objectiveCount - 1 && (
+                  <div className="flex justify-end">
                     <Button
                       type="button"
                       variant="ghost"
@@ -236,8 +253,8 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                     >
                       Remove this objective
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <Textarea
                   name={`obj_${oi}_title`}
@@ -397,25 +414,6 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
             )
           })}
         </div>
-      </div>
-
-      <div>
-        <SectionHeader
-          title="Cycle"
-          description="The time boundary for this Team OKR"
-          className="mb-4"
-        />
-        <Card>
-          <Input
-            name="cycleLabel"
-            label="Cycle label (optional)"
-            placeholder="e.g., Q1 2026, Sprint 4, 6-Week Cycle"
-          />
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <Input name="cycleStartDate" type="date" label="Start date" required />
-            <Input name="cycleEndDate" type="date" label="End date" required />
-          </div>
-        </Card>
       </div>
 
       {prefill && prefill.initiatives.length > 0 && (
