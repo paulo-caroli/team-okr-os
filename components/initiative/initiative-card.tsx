@@ -9,19 +9,45 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
+const COLLAPSE_THRESHOLD = 280
+
+function ExpandableText({
+  text,
+  className,
+}: {
+  text: string
+  className?: string
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = text.length > COLLAPSE_THRESHOLD
+
+  const displayed = isLong && !expanded
+    ? text.slice(0, COLLAPSE_THRESHOLD).trimEnd() + "…"
+    : text
+
+  return (
+    <div className={className}>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+        {displayed}
+      </p>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="mt-1 text-xs font-medium text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  )
+}
+
 interface InitiativeCardProps {
   initiative: InitiativeView
   teamId: string
   keyResults: KeyResult[]
   readOnly?: boolean
-}
-
-function truncateToLines(text: string, maxLines: number): string {
-  const lines = text.split("\n").slice(0, maxLines)
-  const result = lines.join(" ").trim()
-  if (result.length > 140) return result.slice(0, 140).trim() + "…"
-  if (text.split("\n").length > maxLines) return result + "…"
-  return result
 }
 
 export function InitiativeCard({ initiative, teamId, keyResults, readOnly = false }: InitiativeCardProps) {
@@ -38,7 +64,6 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
   }, [concludeState])
 
   const krLabelMap = new Map(keyResults.map((kr) => [kr.id, kr.title || kr.metric]))
-  const beliefSummary = truncateToLines(initiative.hypothesis, 2)
 
   async function handleReactivate() {
     setReactivating(true)
@@ -65,12 +90,10 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
             </Badge>
           </div>
 
-          <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
-            {beliefSummary}
-          </p>
+          <ExpandableText text={initiative.hypothesis} className="mt-2" />
 
           {initiative.expectedImpact && initiative.expectedImpact.keyResultIds.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {initiative.expectedImpact.keyResultIds.map((id) => (
                 <span
                   key={id}
@@ -83,7 +106,7 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
           )}
 
           {initiative.status === "CONCLUDED" && initiative.conclusionReason && (
-            <div className="mt-2 rounded border border-zinc-100 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
+            <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
               <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
                 Concluded
                 {initiative.conclusionImpact && (
@@ -92,14 +115,12 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
                   </span>
                 )}
               </p>
-              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                {truncateToLines(initiative.conclusionReason, 2)}
-              </p>
+              <ExpandableText text={initiative.conclusionReason} className="mt-1.5" />
             </div>
           )}
 
           {!readOnly && (
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex gap-3">
               {initiative.status === "ACTIVE" ? (
                 <button
                   type="button"
