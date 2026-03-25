@@ -189,6 +189,7 @@ export function CommitmentOverview({
             teamId={teamId}
             keyResults={keyResults}
             readOnly={readOnly}
+            hasCheckIns={hasCheckIns}
           />
 
           <CheckInTimeline

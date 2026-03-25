@@ -15,6 +15,7 @@ interface InitiativeListProps {
   teamId: string
   keyResults: KeyResult[]
   readOnly?: boolean
+  hasCheckIns?: boolean
 }
 
 export function InitiativeList({
@@ -23,6 +24,7 @@ export function InitiativeList({
   teamId,
   keyResults,
   readOnly = false,
+  hasCheckIns = false,
 }: InitiativeListProps) {
   const [showForm, setShowForm] = useState(false)
   const handleInitiativeFormSuccess = useCallback(() => {
@@ -86,13 +88,13 @@ export function InitiativeList({
       ) : (
         <div className="space-y-2">
           {active.map((i) => (
-            <InitiativeCard key={i.id} initiative={i} teamId={teamId} keyResults={keyResults} readOnly={readOnly} />
+            <InitiativeCard key={i.id} initiative={i} commitmentId={commitmentId} teamId={teamId} keyResults={keyResults} readOnly={readOnly} hasCheckIns={hasCheckIns} />
           ))}
           {concluded.length > 0 && active.length > 0 && (
             <div className="border-t border-zinc-100 pt-2 dark:border-zinc-800" />
           )}
           {concluded.map((i) => (
-            <InitiativeCard key={i.id} initiative={i} teamId={teamId} keyResults={keyResults} readOnly={readOnly} />
+            <InitiativeCard key={i.id} initiative={i} commitmentId={commitmentId} teamId={teamId} keyResults={keyResults} readOnly={readOnly} hasCheckIns={hasCheckIns} />
           ))}
         </div>
       )}

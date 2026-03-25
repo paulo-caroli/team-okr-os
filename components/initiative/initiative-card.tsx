@@ -4,10 +4,12 @@ import { useState, useActionState, useEffect } from "react"
 import type { InitiativeView } from "@/lib/domain/initiative"
 import type { KeyResult } from "@/lib/domain/commitment"
 import { concludeInitiative, reactivateInitiative, deleteInitiative } from "@/lib/actions/initiative-actions"
+import { InitiativeForm } from "./initiative-form"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { formatDate } from "@/lib/utils"
 
 const COLLAPSE_THRESHOLD = 280
 
@@ -43,14 +45,30 @@ function ExpandableText({
   )
 }
 
+function wasEdited(initiative: InitiativeView): boolean {
+  const created = new Date(initiative.createdAt).getTime()
+  const updated = new Date(initiative.updatedAt).getTime()
+  return updated - created > 5000
+}
+
 interface InitiativeCardProps {
   initiative: InitiativeView
+  commitmentId: string
   teamId: string
   keyResults: KeyResult[]
   readOnly?: boolean
+  hasCheckIns?: boolean
 }
 
-export function InitiativeCard({ initiative, teamId, keyResults, readOnly = false }: InitiativeCardProps) {
+export function InitiativeCard({
+  initiative,
+  commitmentId,
+  teamId,
+  keyResults,
+  readOnly = false,
+  hasCheckIns = false,
+}: InitiativeCardProps) {
+  const [editing, setEditing] = useState(false)
   const [showConcludeModal, setShowConcludeModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [reactivating, setReactivating] = useState(false)
@@ -64,6 +82,8 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
   }, [concludeState])
 
   const krLabelMap = new Map(keyResults.map((kr) => [kr.id, kr.title || kr.metric]))
+  const edited = wasEdited(initiative)
+  const showWarning = hasCheckIns || initiative.status === "CONCLUDED"
 
   async function handleReactivate() {
     setReactivating(true)
@@ -77,6 +97,34 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
     setDeleting(false)
   }
 
+  if (editing) {
+    return (
+      <Card className="py-4">
+        <div className="min-w-0 space-y-4">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Edit Initiative
+          </p>
+          {showWarning && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/50 dark:bg-amber-900/10">
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                This initiative has already been used in check-ins. Editing it may affect historical context.
+              </p>
+            </div>
+          )}
+          <InitiativeForm
+            commitmentId={commitmentId}
+            teamId={teamId}
+            keyResults={keyResults}
+            initiative={initiative}
+            onSuccess={() => setEditing(false)}
+            onCancel={() => setEditing(false)}
+            variant="plain"
+          />
+        </div>
+      </Card>
+    )
+  }
+
   return (
     <>
       <Card className="py-4">
@@ -88,6 +136,11 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
             <Badge variant={initiative.status === "ACTIVE" ? "active" : "completed"}>
               {initiative.status === "ACTIVE" ? "Active" : "Concluded"}
             </Badge>
+            {edited && (
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                Updated {formatDate(initiative.updatedAt)}
+              </span>
+            )}
           </div>
 
           <ExpandableText text={initiative.hypothesis} className="mt-2" />
@@ -121,6 +174,13 @@ export function InitiativeCard({ initiative, teamId, keyResults, readOnly = fals
 
           {!readOnly && (
             <div className="mt-3 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+              >
+                Edit
+              </button>
               {initiative.status === "ACTIVE" ? (
                 <button
                   type="button"

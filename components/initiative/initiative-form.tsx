@@ -2,8 +2,9 @@
 
 import { useActionState, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createInitiative } from "@/lib/actions/initiative-actions"
+import { createInitiative, updateInitiative } from "@/lib/actions/initiative-actions"
 import type { KeyResult } from "@/lib/domain/commitment"
+import type { InitiativeView } from "@/lib/domain/initiative"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ interface InitiativeFormProps {
   commitmentId: string
   teamId: string
   keyResults: KeyResult[]
+  initiative?: InitiativeView
   onSuccess?: (initiative?: {
     id: string
     name: string
@@ -22,6 +24,7 @@ interface InitiativeFormProps {
     conclusionReason: string | null
     conclusionImpact: string | null
   }) => void
+  onCancel?: () => void
   variant?: "card" | "plain"
 }
 
@@ -29,12 +32,18 @@ export function InitiativeForm({
   commitmentId,
   teamId,
   keyResults,
+  initiative,
   onSuccess,
+  onCancel,
   variant = "card",
 }: InitiativeFormProps) {
+  const isEdit = !!initiative
   const router = useRouter()
-  const [state, formAction, isPending] = useActionState(createInitiative, null)
-  const [impactKeyResultIds, setImpactKeyResultIds] = useState<string[]>([])
+  const action = isEdit ? updateInitiative : createInitiative
+  const [state, formAction, isPending] = useActionState(action, null)
+  const [impactKeyResultIds, setImpactKeyResultIds] = useState<string[]>(
+    initiative?.expectedImpact?.keyResultIds ?? [],
+  )
 
   useEffect(() => {
     if (state && "success" in state && state.success) {
@@ -59,6 +68,7 @@ export function InitiativeForm({
       <input type="hidden" name="commitmentId" value={commitmentId} />
       <input type="hidden" name="teamId" value={teamId} />
       <input type="hidden" name="impactKeyResultIds" value={impactKeyResultIds.join(",")} />
+      {isEdit && <input type="hidden" name="initiativeId" value={initiative.id} />}
 
       {state && "error" in state && state.error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
@@ -70,6 +80,7 @@ export function InitiativeForm({
         name="name"
         label="Initiative"
         placeholder="e.g., Simplify onboarding flow"
+        defaultValue={initiative?.name ?? ""}
         required
       />
 
@@ -78,6 +89,7 @@ export function InitiativeForm({
         label="Why do we believe this will influence the team objectives?"
         placeholder="Explain the reasoning behind this initiative..."
         hint="Focus on how this should move measurable key results."
+        defaultValue={initiative?.hypothesis ?? ""}
         required
         rows={3}
       />
@@ -113,8 +125,13 @@ export function InitiativeForm({
 
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" loading={isPending}>
-          Add initiative
+          {isEdit ? "Save changes" : "Add initiative"}
         </Button>
+        {onCancel && (
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
       </div>
     </form>
   )
