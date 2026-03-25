@@ -3,7 +3,7 @@
 import { useState, useActionState, useEffect } from "react"
 import type { InitiativeView } from "@/lib/domain/initiative"
 import type { KeyResult } from "@/lib/domain/commitment"
-import { concludeInitiative, reactivateInitiative, deleteInitiative } from "@/lib/actions/initiative-actions"
+import { concludeInitiative, startInitiative, reactivateInitiative, deleteInitiative } from "@/lib/actions/initiative-actions"
 import { InitiativeForm } from "./initiative-form"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -71,6 +71,7 @@ export function InitiativeCard({
   const [editing, setEditing] = useState(false)
   const [showConcludeModal, setShowConcludeModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [starting, setStarting] = useState(false)
   const [reactivating, setReactivating] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [concludeState, concludeAction, isConcluding] = useActionState(concludeInitiative, null)
@@ -84,6 +85,16 @@ export function InitiativeCard({
   const krLabelMap = new Map(keyResults.map((kr) => [kr.id, kr.title || kr.metric]))
   const edited = wasEdited(initiative)
   const showWarning = hasCheckIns || initiative.status === "CONCLUDED"
+  const isNotStarted = initiative.status === "NOT_STARTED"
+  const isInProgress = initiative.status === "IN_PROGRESS"
+  const isConcluded = initiative.status === "CONCLUDED"
+  const showStartSuggestion = isNotStarted && hasCheckIns && !readOnly
+
+  async function handleStart() {
+    setStarting(true)
+    await startInitiative(initiative.id, teamId)
+    setStarting(false)
+  }
 
   async function handleReactivate() {
     setReactivating(true)
@@ -133,8 +144,16 @@ export function InitiativeCard({
             <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
               {initiative.name}
             </h4>
-            <Badge variant={initiative.status === "ACTIVE" ? "active" : "completed"}>
-              {initiative.status === "ACTIVE" ? "Active" : "Concluded"}
+            <Badge
+              variant={
+                isConcluded ? "completed" : isInProgress ? "in_progress" : "default"
+              }
+            >
+              {isConcluded
+                ? "Concluded"
+                : isInProgress
+                  ? "In progress"
+                  : "Not started"}
             </Badge>
             {edited && (
               <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
@@ -144,6 +163,22 @@ export function InitiativeCard({
           </div>
 
           <ExpandableText text={initiative.hypothesis} className="mt-2" />
+
+          {showStartSuggestion && (
+            <div className="mt-2 flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-900/10">
+              <p className="flex-1 text-xs text-blue-700 dark:text-blue-400">
+                This initiative is being used in check-ins. Mark as in progress?
+              </p>
+              <button
+                type="button"
+                onClick={handleStart}
+                disabled={starting}
+                className="shrink-0 rounded bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-700 dark:hover:bg-blue-600"
+              >
+                Mark as in progress
+              </button>
+            </div>
+          )}
 
           {initiative.expectedImpact && initiative.expectedImpact.keyResultIds.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -173,7 +208,7 @@ export function InitiativeCard({
           )}
 
           {!readOnly && (
-            <div className="mt-3 flex gap-3">
+            <div className="mt-3 flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => setEditing(true)}
@@ -181,7 +216,17 @@ export function InitiativeCard({
               >
                 Edit
               </button>
-              {initiative.status === "ACTIVE" ? (
+              {isNotStarted && (
+                <button
+                  type="button"
+                  onClick={handleStart}
+                  disabled={starting}
+                  className="text-xs text-zinc-400 underline hover:text-zinc-600 disabled:opacity-50 dark:text-zinc-500 dark:hover:text-zinc-300"
+                >
+                  Mark as in progress
+                </button>
+              )}
+              {!isConcluded && (
                 <button
                   type="button"
                   onClick={() => setShowConcludeModal(true)}
@@ -189,7 +234,8 @@ export function InitiativeCard({
                 >
                   Conclude
                 </button>
-              ) : (
+              )}
+              {isConcluded && (
                 <button
                   type="button"
                   onClick={handleReactivate}

@@ -252,7 +252,7 @@ export function GripForm({
   const defaultTime = now.toTimeString().slice(0, 5)
 
   const showConfidencePrompt = confidence === "MEDIUM" || confidence === "LOW"
-  const activeInitiatives = localInitiatives.filter((i) => i.status === "ACTIVE")
+  const activeInitiatives = localInitiatives.filter((i) => i.status !== "CONCLUDED")
   const hasInitiatives = activeInitiatives.length > 0
 
   useEffect(() => {
@@ -268,7 +268,7 @@ export function GripForm({
       name: raw.name,
       hypothesis: raw.hypothesis,
       expectedImpact: parseExpectedImpact(raw.expectedImpact),
-      status: raw.status as "ACTIVE" | "CONCLUDED",
+      status: raw.status as "NOT_STARTED" | "IN_PROGRESS" | "CONCLUDED",
       conclusionReason: raw.conclusionReason,
       conclusionImpact: raw.conclusionImpact,
       createdAt: new Date(),

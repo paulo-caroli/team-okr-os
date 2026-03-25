@@ -31,7 +31,7 @@ export function InitiativeList({
     setShowForm(false)
   }, [])
 
-  const active = initiatives.filter((i) => i.status === "ACTIVE")
+  const active = initiatives.filter((i) => i.status !== "CONCLUDED")
   const concluded = initiatives.filter((i) => i.status === "CONCLUDED")
 
   return (

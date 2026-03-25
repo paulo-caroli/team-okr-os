@@ -160,7 +160,7 @@ model Initiative {
   name             String
   hypothesis       String
   expectedImpact   Json?
-  status           InitiativeStatus @default(ACTIVE)
+  status           InitiativeStatus @default(NOT_STARTED)
   conclusionReason String?
   conclusionImpact String?
   createdAt        DateTime         @default(now())
@@ -168,7 +168,8 @@ model Initiative {
 }
 
 enum InitiativeStatus {
-  ACTIVE
+  NOT_STARTED
+  IN_PROGRESS
   CONCLUDED
 }
 

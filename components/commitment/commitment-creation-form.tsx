@@ -466,7 +466,7 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                   Copy previous initiatives into this new Team OKR
                 </span>
                 <span className="mt-0.5 block text-xs text-zinc-400 dark:text-zinc-500">
-                  Initiative names and hypotheses will be copied. Status will be reset to Active.
+                  Initiative names and hypotheses will be copied. Status will be reset to Not started.
                 </span>
               </div>
             </label>

@@ -184,7 +184,7 @@ export async function createCommitment(
               create: clonedInitiatives.map((init) => ({
                 name: init.name,
                 hypothesis: init.hypothesis,
-                status: "ACTIVE" as const,
+                status: "NOT_STARTED" as const,
               })),
             }
           : undefined,

@@ -1,4 +1,4 @@
-export type InitiativeStatus = "ACTIVE" | "CONCLUDED"
+export type InitiativeStatus = "NOT_STARTED" | "IN_PROGRESS" | "CONCLUDED"
 
 export interface ExpectedImpact {
   keyResultIds: string[]

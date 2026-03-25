@@ -117,6 +117,23 @@ export async function concludeInitiative(
   return { success: true }
 }
 
+export async function startInitiative(
+  initiativeId: string,
+  teamId: string,
+) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const initiative = await db.initiative.update({
+    where: { id: initiativeId },
+    data: { status: "IN_PROGRESS" },
+    select: { teamOkrId: true },
+  })
+
+  revalidatePath(`/team/${teamId}`)
+  revalidatePath(`/team/${teamId}/commitment/${initiative.teamOkrId}`)
+}
+
 export async function reactivateInitiative(
   initiativeId: string,
   teamId: string
@@ -127,7 +144,7 @@ export async function reactivateInitiative(
   const initiative = await db.initiative.update({
     where: { id: initiativeId },
     data: {
-      status: "ACTIVE",
+      status: "IN_PROGRESS",
       conclusionReason: null,
       conclusionImpact: null,
     },
