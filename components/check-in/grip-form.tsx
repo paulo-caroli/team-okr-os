@@ -249,6 +249,14 @@ export function GripForm({
   const [revertingInitiativeId, setRevertingInitiativeId] = useState<string | null>(null)
   const [showAddInitiativeModal, setShowAddInitiativeModal] = useState(false)
   const [selectedInitiativesByKR, setSelectedInitiativesByKR] = useState<Record<string, string[]>>({})
+  const [initiativeNotesByKR, setInitiativeNotesByKR] = useState<Record<string, Record<string, string>>>({})
+
+  function updateInitiativeNote(krId: string, initiativeId: string, text: string) {
+    setInitiativeNotesByKR((prev) => ({
+      ...prev,
+      [krId]: { ...prev[krId], [initiativeId]: text },
+    }))
+  }
 
   function toggleInitiativeForKR(krId: string, initiativeId: string) {
     setSelectedInitiativesByKR((prev) => {
@@ -524,6 +532,72 @@ export function GripForm({
                                       </label>
                                     ))}
                                   </div>
+                                  {selected.length > 0 && (
+                                    <div className="mt-3 space-y-2">
+                                      {selected.map((initId) => {
+                                        const init = localInitiatives.find((i) => i.id === initId)
+                                        if (!init || init.status === "CONCLUDED") return null
+                                        return (
+                                          <div
+                                            key={initId}
+                                            className="ml-5 rounded border border-zinc-100 bg-zinc-50/50 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-800/30"
+                                          >
+                                            <div className="flex items-center justify-between gap-2">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                                                  {init.name}
+                                                </span>
+                                                <Badge
+                                                  variant={init.status === "IN_PROGRESS" ? "in_progress" : "default"}
+                                                  className="text-[10px] px-1.5 py-0"
+                                                >
+                                                  {init.status === "IN_PROGRESS" ? "In progress" : "Not started"}
+                                                </Badge>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                {init.status === "NOT_STARTED" && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleStartInitiative(init)}
+                                                    disabled={startingInitiativeId === init.id}
+                                                    className="text-[11px] text-blue-600 underline hover:text-blue-800 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+                                                  >
+                                                    Start initiative
+                                                  </button>
+                                                )}
+                                                {init.status === "IN_PROGRESS" && (
+                                                  <>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleRevertToNotStarted(init)}
+                                                      disabled={revertingInitiativeId === init.id}
+                                                      className="text-[11px] text-zinc-400 underline hover:text-zinc-600 disabled:opacity-50 dark:text-zinc-500 dark:hover:text-zinc-300"
+                                                    >
+                                                      Mark as not started
+                                                    </button>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setConcludingInitiative(init)}
+                                                      className="text-[11px] text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                                                    >
+                                                      Conclude
+                                                    </button>
+                                                  </>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <textarea
+                                              value={initiativeNotesByKR[kr.id]?.[initId] ?? ""}
+                                              onChange={(e) => updateInitiativeNote(kr.id, initId, e.target.value)}
+                                              placeholder="What happened with this initiative for this KR?"
+                                              rows={2}
+                                              className="mt-2 w-full rounded border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-0 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600"
+                                            />
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
