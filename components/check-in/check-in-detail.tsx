@@ -32,7 +32,7 @@ export function CheckInDetail({ checkIn }: CheckInDetailProps) {
         {checkIn.confidenceReason && (
           <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-              What changed in our understanding
+              The reason behind this confidence level
             </p>
             <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-400">
               {checkIn.confidenceReason}

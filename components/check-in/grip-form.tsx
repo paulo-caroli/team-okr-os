@@ -407,7 +407,7 @@ export function GripForm({
           {/* G — Goals Confidence */}
           <section>
             <GripSectionLabel label="G — Goals Confidence" />
-            <GripSectionHint text="How confident are we in reaching our team objectives?" />
+            <GripSectionHint text="How confident are we in reaching this Team OKR?" />
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
               Base this on what we&apos;ve learned so far, not on effort or activity.
             </p>
@@ -437,7 +437,7 @@ export function GripForm({
                 <div className="mt-4">
                   <Textarea
                     name="confidenceReason"
-                    label="What changed in our understanding?"
+                    label="The reason behind this confidence level"
                     placeholder="Describe what shifted your confidence..."
                     rows={2}
                   />
