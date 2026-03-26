@@ -9,7 +9,7 @@ import {
   useTransition,
 } from "react"
 import { createCheckIn } from "@/lib/actions/check-in-actions"
-import { concludeInitiative, startInitiative } from "@/lib/actions/initiative-actions"
+import { concludeInitiative, startInitiative, markInitiativeNotStarted } from "@/lib/actions/initiative-actions"
 import { InitiativeForm } from "@/components/initiative/initiative-form"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -246,6 +246,7 @@ export function GripForm({
   const [localInitiatives, setLocalInitiatives] = useState<InitiativeView[]>(serverInitiatives)
   const [concludingInitiative, setConcludingInitiative] = useState<InitiativeView | null>(null)
   const [startingInitiativeId, setStartingInitiativeId] = useState<string | null>(null)
+  const [revertingInitiativeId, setRevertingInitiativeId] = useState<string | null>(null)
   const [showAddInitiativeModal, setShowAddInitiativeModal] = useState(false)
 
   async function handleStartInitiative(init: InitiativeView) {
@@ -257,6 +258,17 @@ export function GripForm({
       )
     )
     setStartingInitiativeId(null)
+  }
+
+  async function handleRevertToNotStarted(init: InitiativeView) {
+    setRevertingInitiativeId(init.id)
+    await markInitiativeNotStarted(init.id, teamId)
+    setLocalInitiatives((prev) =>
+      prev.map((i) =>
+        i.id === init.id ? { ...i, status: "NOT_STARTED" as const } : i
+      )
+    )
+    setRevertingInitiativeId(null)
   }
 
   const now = new Date()
@@ -520,13 +532,23 @@ export function GripForm({
                           </button>
                         )}
                         {init.status === "IN_PROGRESS" && (
-                          <button
-                            type="button"
-                            onClick={() => setConcludingInitiative(init)}
-                            className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
-                          >
-                            Conclude
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleRevertToNotStarted(init)}
+                              disabled={revertingInitiativeId === init.id}
+                              className="text-xs text-zinc-400 underline hover:text-zinc-600 disabled:opacity-50 dark:text-zinc-500 dark:hover:text-zinc-300"
+                            >
+                              Mark as not started
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConcludingInitiative(init)}
+                              className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                            >
+                              Conclude
+                            </button>
+                          </div>
                         )}
                       </div>
                       {init.expectedImpact && init.expectedImpact.keyResultIds.length > 0 && (

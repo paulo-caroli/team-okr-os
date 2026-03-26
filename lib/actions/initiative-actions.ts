@@ -134,6 +134,23 @@ export async function startInitiative(
   revalidatePath(`/team/${teamId}/commitment/${initiative.teamOkrId}`)
 }
 
+export async function markInitiativeNotStarted(
+  initiativeId: string,
+  teamId: string,
+) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const initiative = await db.initiative.update({
+    where: { id: initiativeId },
+    data: { status: "NOT_STARTED" },
+    select: { teamOkrId: true },
+  })
+
+  revalidatePath(`/team/${teamId}`)
+  revalidatePath(`/team/${teamId}/commitment/${initiative.teamOkrId}`)
+}
+
 export async function reactivateInitiative(
   initiativeId: string,
   teamId: string
