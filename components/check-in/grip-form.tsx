@@ -248,6 +248,25 @@ export function GripForm({
   const [startingInitiativeId, setStartingInitiativeId] = useState<string | null>(null)
   const [revertingInitiativeId, setRevertingInitiativeId] = useState<string | null>(null)
   const [showAddInitiativeModal, setShowAddInitiativeModal] = useState(false)
+  const [selectedInitiativesByKR, setSelectedInitiativesByKR] = useState<Record<string, string[]>>({})
+
+  function toggleInitiativeForKR(krId: string, initiativeId: string) {
+    setSelectedInitiativesByKR((prev) => {
+      const current = prev[krId] ?? []
+      const next = current.includes(initiativeId)
+        ? current.filter((id) => id !== initiativeId)
+        : [...current, initiativeId]
+      return { ...prev, [krId]: next }
+    })
+  }
+
+  function getInitiativesForKR(krId: string): InitiativeView[] {
+    return localInitiatives.filter(
+      (i) =>
+        i.status !== "CONCLUDED" &&
+        i.expectedImpact?.keyResultIds.includes(krId)
+    )
+  }
 
   async function handleStartInitiative(init: InitiativeView) {
     setStartingInitiativeId(init.id)
@@ -446,35 +465,70 @@ export function GripForm({
                         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                           Key Results
                         </p>
-                        {objectives[0].keyResults.map((kr) => (
-                          <div
-                            key={kr.id}
-                            className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-                          >
-                            <input type="hidden" name="keyResultIds" value={kr.id} />
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                  {kr.title}
-                                </p>
-                                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kr.metric}</p>
-                                <div className="mt-0.5 flex gap-3 text-xs text-zinc-400 dark:text-zinc-500">
-                                  <span>Current: {kr.current}</span>
-                                  <span>Target: {kr.target}</span>
-                                  {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
+                        {objectives[0].keyResults.map((kr) => {
+                          const relatedInitiatives = getInitiativesForKR(kr.id)
+                          const selected = selectedInitiativesByKR[kr.id] ?? []
+                          return (
+                            <div
+                              key={kr.id}
+                              className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                            >
+                              <input type="hidden" name="keyResultIds" value={kr.id} />
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                    {kr.title}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kr.metric}</p>
+                                  <div className="mt-0.5 flex gap-3 text-xs text-zinc-400 dark:text-zinc-500">
+                                    <span>Current: {kr.current}</span>
+                                    <span>Target: {kr.target}</span>
+                                    {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
+                                  </div>
                                 </div>
+                                <Input
+                                  name={`kr_${kr.id}`}
+                                  type="number"
+                                  step="any"
+                                  defaultValue={String(kr.current)}
+                                  placeholder="Value"
+                                  className="h-8 w-28"
+                                />
                               </div>
-                              <Input
-                                name={`kr_${kr.id}`}
-                                type="number"
-                                step="any"
-                                defaultValue={String(kr.current)}
-                                placeholder="Value"
-                                className="h-8 w-28"
-                              />
+                              {relatedInitiatives.length > 0 && (
+                                <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                                  <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                                    Which initiatives influenced this KR?
+                                  </p>
+                                  <div className="mt-2 space-y-1.5">
+                                    {relatedInitiatives.map((init) => (
+                                      <label
+                                        key={init.id}
+                                        className="flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={selected.includes(init.id)}
+                                          onChange={() => toggleInitiativeForKR(kr.id, init.id)}
+                                          className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400 dark:border-zinc-600"
+                                        />
+                                        <span className="text-xs text-zinc-700 dark:text-zinc-300">
+                                          {init.name}
+                                        </span>
+                                        <Badge
+                                          variant={init.status === "IN_PROGRESS" ? "in_progress" : "default"}
+                                          className="text-[10px] px-1.5 py-0"
+                                        >
+                                          {init.status === "IN_PROGRESS" ? "In progress" : "Not started"}
+                                        </Badge>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </div>
