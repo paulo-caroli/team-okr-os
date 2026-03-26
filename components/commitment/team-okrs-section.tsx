@@ -7,6 +7,7 @@ import {
   keyResultProgressPercent,
 } from "@/lib/domain/commitment"
 import { createKeyResult } from "@/lib/actions/commitment-actions"
+import { formatDate } from "@/lib/utils"
 import { SectionHeader } from "@/components/ui/section-header"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,16 +20,36 @@ interface TeamOkrsSectionProps {
   editMode?: boolean
 }
 
+function dueDateStyle(date: Date): string {
+  const now = new Date()
+  const d = new Date(date)
+  const diffMs = d.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  if (diffDays < 0) return "text-red-500 dark:text-red-400"
+  if (diffDays <= 7) return "text-amber-600 dark:text-amber-400"
+  return "text-zinc-400 dark:text-zinc-500"
+}
+
+function dueDateLabel(date: Date): string {
+  const now = new Date()
+  const d = new Date(date)
+  if (d.getTime() < now.getTime()) return `Overdue · ${formatDate(d)}`
+  return `Due: ${formatDate(d)}`
+}
+
 function KeyResultRow({
   kr,
   editMode,
   krIndex,
+  cycleEndDate,
 }: {
   kr: KeyResult
   editMode?: boolean
   krIndex: number
+  cycleEndDate: Date
 }) {
   const krPct = Math.round(keyResultProgressPercent(kr))
+  const dueDate = kr.dueDate ?? cycleEndDate
 
   if (editMode) {
     return (
@@ -74,6 +95,15 @@ function KeyResultRow({
             <p className="text-xs text-zinc-400 dark:text-zinc-500">Updated via check-ins</p>
           </div>
         </div>
+        <div className="mt-3">
+          <Input
+            name={`kr_${krIndex}_dueDate`}
+            type="date"
+            label="Due date (optional)"
+            defaultValue={kr.dueDate ? new Date(kr.dueDate).toISOString().slice(0, 10) : ""}
+            hint="Defaults to the Team OKR cycle end date"
+          />
+        </div>
       </div>
     )
   }
@@ -82,7 +112,12 @@ function KeyResultRow({
     <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/30">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
+            <span className={`text-[11px] ${dueDateStyle(dueDate)}`}>
+              {dueDateLabel(dueDate)}
+            </span>
+          </div>
           <div className="mt-1">
             <span className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
               Metric
@@ -156,12 +191,14 @@ function ObjectiveCard({
   teamId,
   readOnly,
   editMode,
+  cycleEndDate,
 }: {
   objective: ObjectiveView
   commitmentId: string
   teamId: string
   readOnly: boolean
   editMode?: boolean
+  cycleEndDate: Date
 }) {
   const pct = Math.round(aggregateKeyResultProgress(objective))
 
@@ -240,6 +277,7 @@ function ObjectiveCard({
                 kr={kr}
                 editMode={editMode}
                 krIndex={i}
+                cycleEndDate={cycleEndDate}
               />
             ))}
           </div>
@@ -277,6 +315,7 @@ export function TeamOkrsSection({ commitment, teamId, editMode }: TeamOkrsSectio
           teamId={teamId}
           readOnly={readOnly}
           editMode={editMode}
+          cycleEndDate={commitment.cycle.endDate}
         />
       ) : (
         <Card className="p-5">

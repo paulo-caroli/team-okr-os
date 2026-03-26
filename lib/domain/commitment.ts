@@ -5,6 +5,7 @@ export interface KeyResult {
   baseline: number | null
   target: number
   current: number
+  dueDate: Date | null
   sortOrder: number
 }
 
@@ -112,6 +113,7 @@ export function toCommitmentView(raw: {
       baseline: number | null
       target: number
       current: number
+      dueDate: Date | null
       sortOrder: number
     }>
   }>
@@ -136,6 +138,7 @@ export function toCommitmentView(raw: {
         baseline: kr.baseline,
         target: kr.target,
         current: kr.current,
+        dueDate: kr.dueDate,
         sortOrder: kr.sortOrder,
       })),
     })),

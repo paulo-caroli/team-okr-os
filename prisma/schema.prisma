@@ -144,6 +144,7 @@ model KeyResult {
   baseline    Float?
   target      Float
   current     Float
+  dueDate     DateTime?
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

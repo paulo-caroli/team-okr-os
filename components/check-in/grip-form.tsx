@@ -20,13 +20,14 @@ import type { Confidence } from "@/lib/domain/check-in"
 import type { ObjectiveView, KeyResult } from "@/lib/domain/commitment"
 import { flatKeyResults } from "@/lib/domain/commitment"
 import type { InitiativeView, ExpectedImpact } from "@/lib/domain/initiative"
-import { cn } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 
 interface GripFormProps {
   commitmentId: string
   teamId: string
   objectives: ObjectiveView[]
   initiatives: InitiativeView[]
+  cycleEndDate: Date
 }
 
 /** True when all key results match stored currents and interpretation is empty. */
@@ -226,6 +227,7 @@ export function GripForm({
   teamId,
   objectives,
   initiatives: serverInitiatives,
+  cycleEndDate,
 }: GripFormProps) {
   const keyResults = flatKeyResults(objectives)
   const [state, formAction, isPending] = useActionState(createCheckIn, null)
@@ -485,9 +487,27 @@ export function GripForm({
                               <input type="hidden" name="keyResultIds" value={kr.id} />
                               <div className="flex items-center justify-between gap-4">
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                    {kr.title}
-                                  </p>
+                                  <div className="flex items-baseline gap-2">
+                                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                      {kr.title}
+                                    </p>
+                                    {(() => {
+                                      const d = new Date(kr.dueDate ?? cycleEndDate)
+                                      const now = new Date()
+                                      const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                                      const color = diffDays < 0
+                                        ? "text-red-500 dark:text-red-400"
+                                        : diffDays <= 7
+                                          ? "text-amber-600 dark:text-amber-400"
+                                          : "text-zinc-400 dark:text-zinc-500"
+                                      const label = diffDays < 0
+                                        ? `Overdue · ${formatDate(d)}`
+                                        : `Due: ${formatDate(d)}`
+                                      return (
+                                        <span className={`text-[11px] ${color}`}>{label}</span>
+                                      )
+                                    })()}
+                                  </div>
                                   <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kr.metric}</p>
                                   <div className="mt-0.5 flex gap-3 text-xs text-zinc-400 dark:text-zinc-500">
                                     <span>Current: {kr.current}</span>

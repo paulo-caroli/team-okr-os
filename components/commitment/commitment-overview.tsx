@@ -86,21 +86,27 @@ export function CommitmentOverview({
         const metric = (formData.get(`kr_${i}_metric`) as string)?.trim()
         const baselineRaw = (formData.get(`kr_${i}_baseline`) as string)?.trim()
         const targetRaw = (formData.get(`kr_${i}_target`) as string)?.trim()
+        const dueDateRaw = (formData.get(`kr_${i}_dueDate`) as string)?.trim()
 
         const baseline = baselineRaw ? parseFloat(baselineRaw) : null
         const target = targetRaw ? parseFloat(targetRaw) : NaN
+        const newDueDate = dueDateRaw ? new Date(dueDateRaw) : null
+        const oldDueDate = kr.dueDate ? new Date(kr.dueDate).toISOString().slice(0, 10) : null
+        const newDueDateStr = newDueDate ? newDueDate.toISOString().slice(0, 10) : null
 
         const titleChanged = krTitle && krTitle !== kr.title
         const metricChanged = metric && metric !== kr.metric
         const baselineChanged = baseline !== kr.baseline
         const targetChanged = !Number.isNaN(target) && target !== kr.target
+        const dueDateChanged = newDueDateStr !== oldDueDate
 
-        if (titleChanged || metricChanged || baselineChanged || targetChanged) {
-          const data: { title?: string; metric?: string; baseline?: number | null; target?: number } = {}
+        if (titleChanged || metricChanged || baselineChanged || targetChanged || dueDateChanged) {
+          const data: { title?: string; metric?: string; baseline?: number | null; target?: number; dueDate?: Date | null } = {}
           if (titleChanged) data.title = krTitle
           if (metricChanged) data.metric = metric
           if (baselineChanged) data.baseline = baseline
           if (targetChanged) data.target = target
+          if (dueDateChanged) data.dueDate = newDueDate && !Number.isNaN(newDueDate.getTime()) ? newDueDate : null
           promises.push(updateKeyResultDefinition(kr.id, data))
         }
       }

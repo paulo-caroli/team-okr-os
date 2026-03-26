@@ -41,6 +41,7 @@ export default async function NewCheckInPage({
         teamId={teamId}
         objectives={commitment.objectives}
         initiatives={initiatives}
+        cycleEndDate={commitment.cycle.endDate}
       />
     </div>
   )

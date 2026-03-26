@@ -32,6 +32,7 @@ interface ParsedObjective {
     baseline: number | null
     target: number
     current: number
+    dueDate: Date | null
   }>
 }
 
@@ -70,6 +71,9 @@ function parseObjectivesFromForm(
           error: `Objective “${title.slice(0, 40)}…”: key result ${ki + 1} needs a valid current number.`,
         }
       }
+      const deadlineRaw = (formData.get(`obj_${oi}_kr_${ki}_deadline`) as string)?.trim() || null
+      const dueDate = deadlineRaw ? new Date(deadlineRaw) : null
+
       keyResults.push({
         title: krTitle,
         metric,
@@ -78,6 +82,7 @@ function parseObjectivesFromForm(
         ),
         target,
         current,
+        dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null,
       })
     }
 
@@ -173,6 +178,7 @@ export async function createCommitment(
               baseline: kr.baseline,
               target: kr.target,
               current: kr.current,
+              dueDate: kr.dueDate,
               sortOrder: ki,
             })),
           },
@@ -289,7 +295,7 @@ export async function updateObjectiveFields(
 
 export async function updateKeyResultDefinition(
   keyResultId: string,
-  data: { title?: string; metric?: string; baseline?: number | null; target?: number },
+  data: { title?: string; metric?: string; baseline?: number | null; target?: number; dueDate?: Date | null },
 ) {
   const session = await auth()
   if (!session?.user?.id) redirect("/sign-in")
@@ -307,6 +313,7 @@ export async function updateKeyResultDefinition(
   }
   if (data.baseline !== undefined) updateData.baseline = data.baseline
   if (data.target !== undefined) updateData.target = data.target
+  if (data.dueDate !== undefined) updateData.dueDate = data.dueDate
 
   const kr = await db.keyResult.update({
     where: { id: keyResultId },
