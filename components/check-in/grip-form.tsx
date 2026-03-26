@@ -9,7 +9,7 @@ import {
   useTransition,
 } from "react"
 import { createCheckIn } from "@/lib/actions/check-in-actions"
-import { concludeInitiative } from "@/lib/actions/initiative-actions"
+import { concludeInitiative, startInitiative } from "@/lib/actions/initiative-actions"
 import { InitiativeForm } from "@/components/initiative/initiative-form"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -245,7 +245,19 @@ export function GripForm({
   }
   const [localInitiatives, setLocalInitiatives] = useState<InitiativeView[]>(serverInitiatives)
   const [concludingInitiative, setConcludingInitiative] = useState<InitiativeView | null>(null)
+  const [startingInitiativeId, setStartingInitiativeId] = useState<string | null>(null)
   const [showAddInitiativeModal, setShowAddInitiativeModal] = useState(false)
+
+  async function handleStartInitiative(init: InitiativeView) {
+    setStartingInitiativeId(init.id)
+    await startInitiative(init.id, teamId)
+    setLocalInitiatives((prev) =>
+      prev.map((i) =>
+        i.id === init.id ? { ...i, status: "IN_PROGRESS" as const } : i
+      )
+    )
+    setStartingInitiativeId(null)
+  }
 
   const now = new Date()
   const defaultDate = now.toISOString().slice(0, 10)
@@ -491,15 +503,31 @@ export function GripForm({
                           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                             {init.name}
                           </span>
-                          <Badge variant="active">Active</Badge>
+                          <Badge
+                            variant={init.status === "IN_PROGRESS" ? "in_progress" : "default"}
+                          >
+                            {init.status === "IN_PROGRESS" ? "In progress" : "Not started"}
+                          </Badge>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setConcludingInitiative(init)}
-                          className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
-                        >
-                          Conclude
-                        </button>
+                        {init.status === "NOT_STARTED" && (
+                          <button
+                            type="button"
+                            onClick={() => handleStartInitiative(init)}
+                            disabled={startingInitiativeId === init.id}
+                            className="text-xs text-blue-600 underline hover:text-blue-800 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            Start initiative
+                          </button>
+                        )}
+                        {init.status === "IN_PROGRESS" && (
+                          <button
+                            type="button"
+                            onClick={() => setConcludingInitiative(init)}
+                            className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                          >
+                            Conclude
+                          </button>
+                        )}
                       </div>
                       {init.expectedImpact && init.expectedImpact.keyResultIds.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1.5">
