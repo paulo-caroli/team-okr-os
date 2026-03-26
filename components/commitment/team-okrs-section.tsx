@@ -52,13 +52,20 @@ function KeyResultRow({
     return (
       <div className="rounded-lg border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700 dark:bg-zinc-800/50">
         <input type="hidden" name={`kr_${krIndex}_id`} value={kr.id} />
-        <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
         <Input
-          name={`kr_${krIndex}_metric`}
-          label="Metric"
-          defaultValue={kr.metric}
+          name={`kr_${krIndex}_title`}
+          label="Key Result"
+          defaultValue={kr.title}
           required
         />
+        <div className="mt-3">
+          <Input
+            name={`kr_${krIndex}_metric`}
+            label="Metric"
+            defaultValue={kr.metric}
+            required
+          />
+        </div>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <Input
             name={`kr_${krIndex}_baseline`}

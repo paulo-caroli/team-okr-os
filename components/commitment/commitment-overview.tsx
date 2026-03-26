@@ -82,6 +82,7 @@ export function CommitmentOverview({
         const krId = formData.get(`kr_${i}_id`) as string
         if (krId !== kr.id) continue
 
+        const krTitle = (formData.get(`kr_${i}_title`) as string)?.trim()
         const metric = (formData.get(`kr_${i}_metric`) as string)?.trim()
         const baselineRaw = (formData.get(`kr_${i}_baseline`) as string)?.trim()
         const targetRaw = (formData.get(`kr_${i}_target`) as string)?.trim()
@@ -89,12 +90,14 @@ export function CommitmentOverview({
         const baseline = baselineRaw ? parseFloat(baselineRaw) : null
         const target = targetRaw ? parseFloat(targetRaw) : NaN
 
+        const titleChanged = krTitle && krTitle !== kr.title
         const metricChanged = metric && metric !== kr.metric
         const baselineChanged = baseline !== kr.baseline
         const targetChanged = !Number.isNaN(target) && target !== kr.target
 
-        if (metricChanged || baselineChanged || targetChanged) {
-          const data: { metric?: string; baseline?: number | null; target?: number } = {}
+        if (titleChanged || metricChanged || baselineChanged || targetChanged) {
+          const data: { title?: string; metric?: string; baseline?: number | null; target?: number } = {}
+          if (titleChanged) data.title = krTitle
           if (metricChanged) data.metric = metric
           if (baselineChanged) data.baseline = baseline
           if (targetChanged) data.target = target

@@ -289,12 +289,17 @@ export async function updateObjectiveFields(
 
 export async function updateKeyResultDefinition(
   keyResultId: string,
-  data: { metric?: string; baseline?: number | null; target?: number },
+  data: { title?: string; metric?: string; baseline?: number | null; target?: number },
 ) {
   const session = await auth()
   if (!session?.user?.id) redirect("/sign-in")
 
   const updateData: Record<string, unknown> = {}
+  if (data.title !== undefined) {
+    const trimmed = data.title.trim()
+    if (!trimmed) return
+    updateData.title = trimmed
+  }
   if (data.metric !== undefined) {
     const trimmed = data.metric.trim()
     if (!trimmed) return
