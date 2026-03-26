@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import type { CommitmentView, KeyResult, ObjectiveView } from "@/lib/domain/commitment"
 import {
   aggregateKeyResultProgress,
@@ -60,6 +61,14 @@ function KeyResultEditRow({
   onDelete?: () => void
   isNew: boolean
 }) {
+  const [liveBaseline, setLiveBaseline] = useState(
+    kr.baseline !== null ? String(kr.baseline) : ""
+  )
+
+  const currentDisplay = isNew
+    ? (liveBaseline ? parseFloat(liveBaseline) || 0 : 0)
+    : kr.current
+
   return (
     <div className="rounded-lg border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700 dark:bg-zinc-800/50">
       {!isNew && <input type="hidden" name={`kr_${krIndex}_id`} value={kr.id} />}
@@ -94,13 +103,24 @@ function KeyResultEditRow({
         />
       </div>
       <div className="mt-3 grid grid-cols-3 gap-3">
-        <Input
-          name={`kr_${krIndex}_baseline`}
-          type="number"
-          step="any"
-          label="Baseline (optional)"
-          defaultValue={kr.baseline !== null ? String(kr.baseline) : ""}
-        />
+        {isNew ? (
+          <Input
+            name={`kr_${krIndex}_baseline`}
+            type="number"
+            step="any"
+            label="Baseline (optional)"
+            value={liveBaseline}
+            onChange={(e) => setLiveBaseline(e.target.value)}
+          />
+        ) : (
+          <Input
+            name={`kr_${krIndex}_baseline`}
+            type="number"
+            step="any"
+            label="Baseline (optional)"
+            defaultValue={kr.baseline !== null ? String(kr.baseline) : ""}
+          />
+        )}
         <Input
           name={`kr_${krIndex}_target`}
           type="number"
@@ -114,7 +134,7 @@ function KeyResultEditRow({
             Current
           </span>
           <div className="flex h-10 items-center rounded-lg border border-zinc-100 bg-zinc-50 px-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
-            {isNew ? (kr.baseline ?? 0) : kr.current}
+            {currentDisplay}
           </div>
           <p className="text-xs text-zinc-400 dark:text-zinc-500">Updated via check-ins</p>
         </div>
