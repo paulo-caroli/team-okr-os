@@ -147,7 +147,6 @@ export function CommitmentOverview({
             metric,
             baseline,
             target,
-            current: baseline ?? 0,
             dueDate: validDueDate,
           }),
         )

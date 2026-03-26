@@ -31,7 +31,6 @@ interface ParsedObjective {
     metric: string
     baseline: number | null
     target: number
-    current: number
     dueDate: Date | null
   }>
 }
@@ -58,17 +57,9 @@ function parseObjectivesFromForm(
       const target = parseRequiredFloat(
         (formData.get(`obj_${oi}_kr_${ki}_target`) as string)?.trim() || null
       )
-      const current = parseRequiredFloat(
-        (formData.get(`obj_${oi}_kr_${ki}_current`) as string)?.trim() || null
-      )
       if (target === null) {
         return {
-          error: `Objective “${title.slice(0, 40)}…”: key result ${ki + 1} needs a valid target number.`,
-        }
-      }
-      if (current === null) {
-        return {
-          error: `Objective “${title.slice(0, 40)}…”: key result ${ki + 1} needs a valid current number.`,
+          error: `Objective "${title.slice(0, 40)}\u2026": key result ${ki + 1} needs a valid target number.`,
         }
       }
       const deadlineRaw = (formData.get(`obj_${oi}_kr_${ki}_deadline`) as string)?.trim() || null
@@ -81,7 +72,6 @@ function parseObjectivesFromForm(
           (formData.get(`obj_${oi}_kr_${ki}_baseline`) as string)?.trim() || null
         ),
         target,
-        current,
         dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null,
       })
     }
@@ -96,7 +86,7 @@ function parseObjectivesFromForm(
   for (const o of objectives) {
     if (o.keyResults.length === 0) {
       return {
-        error: `Objective “${o.title.slice(0, 60)}” needs at least one key result with a metric.`,
+        error: `Objective "${o.title.slice(0, 60)}" needs at least one key result with a metric.`,
       }
     }
   }
@@ -177,7 +167,7 @@ export async function createCommitment(
               metric: kr.metric,
               baseline: kr.baseline,
               target: kr.target,
-              current: kr.current,
+              current: kr.baseline ?? 0,
               dueDate: kr.dueDate,
               sortOrder: ki,
             })),
@@ -392,11 +382,9 @@ export async function createKeyResult(
     (formData.get("baseline") as string)?.trim() || null
   )
   const target = parseRequiredFloat((formData.get("target") as string)?.trim() || null)
-  const current = parseRequiredFloat((formData.get("current") as string)?.trim() || null)
 
   if (!metric) return { error: "Metric is required." }
   if (target === null) return { error: "Target must be a number." }
-  if (current === null) return { error: "Current value must be a number." }
 
   const title = titleRaw || metric
 
@@ -431,7 +419,7 @@ export async function createKeyResult(
       metric,
       baseline,
       target,
-      current,
+      current: baseline ?? 0,
       sortOrder: nextOrder,
     },
   })
@@ -575,7 +563,6 @@ export async function addKeyResultToObjective(
     metric: string
     baseline: number | null
     target: number
-    current: number
     dueDate: Date | null
   },
 ) {
@@ -601,7 +588,7 @@ export async function addKeyResultToObjective(
       metric: data.metric,
       baseline: data.baseline,
       target: data.target,
-      current: data.current,
+      current: data.baseline ?? 0,
       dueDate: data.dueDate,
       sortOrder: nextOrder,
     },
