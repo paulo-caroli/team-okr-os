@@ -26,6 +26,7 @@ interface InitiativeFormProps {
   }) => void
   onCancel?: () => void
   variant?: "card" | "plain"
+  defaultImpactKeyResultIds?: string[]
 }
 
 export function InitiativeForm({
@@ -36,13 +37,14 @@ export function InitiativeForm({
   onSuccess,
   onCancel,
   variant = "card",
+  defaultImpactKeyResultIds,
 }: InitiativeFormProps) {
   const isEdit = !!initiative
   const router = useRouter()
   const action = isEdit ? updateInitiative : createInitiative
   const [state, formAction, isPending] = useActionState(action, null)
   const [impactKeyResultIds, setImpactKeyResultIds] = useState<string[]>(
-    initiative?.expectedImpact?.keyResultIds ?? [],
+    initiative?.expectedImpact?.keyResultIds ?? defaultImpactKeyResultIds ?? [],
   )
 
   useEffect(() => {
