@@ -151,7 +151,7 @@ export function CommitmentOverview({
         <form action={handleSubmit}>
           <div className="space-y-8">
             <TeamOkrHeading commitment={commitment} editMode />
-            <TeamOkrsSection commitment={commitment} teamId={teamId} editMode />
+            <TeamOkrsSection commitment={commitment} editMode />
           </div>
           <div className="mt-8 flex items-center justify-end gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
             <Button
@@ -190,7 +190,7 @@ export function CommitmentOverview({
             />
           )}
 
-          <TeamOkrsSection commitment={commitment} teamId={teamId} />
+          <TeamOkrsSection commitment={commitment} />
 
           <InitiativeList
             initiatives={initiatives}

@@ -1,22 +1,16 @@
-"use client"
-
-import { useState, useActionState } from "react"
 import type { CommitmentView, KeyResult, ObjectiveView } from "@/lib/domain/commitment"
 import {
   aggregateKeyResultProgress,
   keyResultProgressPercent,
 } from "@/lib/domain/commitment"
-import { createKeyResult } from "@/lib/actions/commitment-actions"
 import { formatDate } from "@/lib/utils"
 import { SectionHeader } from "@/components/ui/section-header"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
 
 interface TeamOkrsSectionProps {
   commitment: CommitmentView
-  teamId: string
   editMode?: boolean
 }
 
@@ -110,93 +104,34 @@ function KeyResultRow({
 
   return (
     <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/30">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
-            <span className={`text-[11px] ${dueDateStyle(dueDate)}`}>
-              {dueDateLabel(dueDate)}
-            </span>
-          </div>
-          <div className="mt-1">
-            <span className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-              Metric
-            </span>
-            <p className="mt-0.5 text-sm text-zinc-700 dark:text-zinc-300">{kr.metric}</p>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-            {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
-            <span>Target: {kr.target}</span>
-            <span className="font-medium text-zinc-600 dark:text-zinc-300">Progress: {krPct}%</span>
-          </div>
-        </div>
-        <div className="text-right">
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{kr.current}</span>
-        </div>
+      <div className="flex items-baseline gap-2">
+        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
+        <span className={`text-[11px] ${dueDateStyle(dueDate)}`}>
+          {dueDateLabel(dueDate)}
+        </span>
+      </div>
+      <div className="mt-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+          Metric
+        </span>
+        <p className="mt-0.5 text-sm text-zinc-700 dark:text-zinc-300">{kr.metric}</p>
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+        {kr.baseline !== null && <span>Baseline: {kr.baseline}</span>}
+        <span>Current: <span className="font-medium text-zinc-700 dark:text-zinc-200">{kr.current}</span></span>
+        <span>Target: {kr.target}</span>
+        <span className="font-medium text-zinc-600 dark:text-zinc-300">Progress: {krPct}%</span>
       </div>
     </div>
   )
 }
 
-function AddKeyResultForm({
-  objectiveId,
-  commitmentId,
-  teamId,
-}: {
-  objectiveId: string
-  commitmentId: string
-  teamId: string
-}) {
-  const [state, formAction, isPending] = useActionState(createKeyResult, null)
-  const [open, setOpen] = useState(false)
-
-  if (!open) {
-    return (
-      <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>
-        + Add Key Result
-      </Button>
-    )
-  }
-
-  return (
-    <form action={formAction} className="mt-3 space-y-3 rounded-lg border border-dashed border-zinc-200 p-4 dark:border-zinc-700">
-      <input type="hidden" name="teamId" value={teamId} />
-      <input type="hidden" name="commitmentId" value={commitmentId} />
-      <input type="hidden" name="objectiveId" value={objectiveId} />
-      {state?.error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>
-      )}
-      <Input name="title" label="Title" placeholder="Short name for this result" />
-      <Input name="metric" label="Metric" placeholder="What you measure" required />
-      <div className="grid grid-cols-3 gap-3">
-        <Input name="baseline" type="number" step="any" label="Baseline (optional)" />
-        <Input name="target" type="number" step="any" label="Target" required />
-        <Input name="current" type="number" step="any" label="Current" required />
-      </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={isPending}>
-          Save key result
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  )
-}
-
 function ObjectiveCard({
   objective,
-  commitmentId,
-  teamId,
-  readOnly,
   editMode,
   cycleEndDate,
 }: {
   objective: ObjectiveView
-  commitmentId: string
-  teamId: string
-  readOnly: boolean
   editMode?: boolean
   cycleEndDate: Date
 }) {
@@ -283,23 +218,12 @@ function ObjectiveCard({
           </div>
         )}
 
-        {!readOnly && !editMode && (
-          <div className="mt-4">
-            <AddKeyResultForm
-              objectiveId={objective.id}
-              commitmentId={commitmentId}
-              teamId={teamId}
-            />
-          </div>
-        )}
       </div>
     </Card>
   )
 }
 
-export function TeamOkrsSection({ commitment, teamId, editMode }: TeamOkrsSectionProps) {
-  const readOnly = commitment.status !== "ACTIVE"
-
+export function TeamOkrsSection({ commitment, editMode }: TeamOkrsSectionProps) {
   return (
     <div>
       <SectionHeader
@@ -311,9 +235,6 @@ export function TeamOkrsSection({ commitment, teamId, editMode }: TeamOkrsSectio
       {commitment.objectives.length > 0 ? (
         <ObjectiveCard
           objective={commitment.objectives[0]}
-          commitmentId={commitment.id}
-          teamId={teamId}
-          readOnly={readOnly}
           editMode={editMode}
           cycleEndDate={commitment.cycle.endDate}
         />
