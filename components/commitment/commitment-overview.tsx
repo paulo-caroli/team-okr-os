@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import type { CommitmentView } from "@/lib/domain/commitment"
 import { flatKeyResults } from "@/lib/domain/commitment"
 import type { InitiativeView } from "@/lib/domain/initiative"
@@ -10,9 +10,11 @@ import {
   updateTeamOkrContext,
   updateObjectiveFields,
   updateKeyResultDefinition,
+  addKeyResultToObjective,
+  deleteKeyResult,
 } from "@/lib/actions/commitment-actions"
 import { TeamOkrHeading } from "./team-okr-heading"
-import { TeamOkrsSection } from "./team-okrs-section"
+import { TeamOkrsSection, type EditableKR } from "./team-okrs-section"
 import { InitiativeList } from "@/components/initiative/initiative-list"
 import { CheckInTimeline } from "@/components/check-in/check-in-timeline"
 import { CommitmentStatusBar } from "./commitment-status-bar"
@@ -42,7 +44,50 @@ export function CommitmentOverview({
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
 
+  const objective = commitment.objectives[0] ?? null
+
+  function buildEditableKRs(): EditableKR[] {
+    if (!objective) return []
+    return objective.keyResults.map((kr) => ({ ...kr }))
+  }
+
+  const [editableKRs, setEditableKRs] = useState<EditableKR[]>(buildEditableKRs)
+  const [deletedKRIds, setDeletedKRIds] = useState<string[]>([])
+
   const hasCheckIns = commitment.checkInCount > 0
+
+  function enterEditMode() {
+    setEditableKRs(buildEditableKRs())
+    setDeletedKRIds([])
+    setEditMode(true)
+  }
+
+  const handleAddKR = useCallback(() => {
+    setEditableKRs((prev) => [
+      ...prev,
+      {
+        _tempId: `new_${Date.now()}`,
+        id: "",
+        title: "",
+        metric: "",
+        baseline: null,
+        target: 0,
+        current: 0,
+        dueDate: null,
+        sortOrder: prev.length,
+      },
+    ])
+  }, [])
+
+  const handleDeleteKR = useCallback((index: number) => {
+    setEditableKRs((prev) => {
+      const kr = prev[index]
+      if (kr && kr.id && !kr._tempId) {
+        setDeletedKRIds((ids) => [...ids, kr.id])
+      }
+      return prev.filter((_, i) => i !== index)
+    })
+  }, [])
 
   async function persistChanges(formData: FormData) {
     setSaving(true)
@@ -62,7 +107,6 @@ export function CommitmentOverview({
       promises.push(updateTeamOkrContext(commitment.id, context))
     }
 
-    const objective = commitment.objectives[0]
     if (objId && objective) {
       const titleChanged = objTitle && objTitle !== objective.title
       const descChanged = (objDesc.trim() || null) !== (objective.description || null)
@@ -76,28 +120,49 @@ export function CommitmentOverview({
       }
     }
 
-    if (objective) {
-      for (let i = 0; i < objective.keyResults.length; i++) {
-        const kr = objective.keyResults[i]
+    for (const deletedId of deletedKRIds) {
+      promises.push(deleteKeyResult(deletedId))
+    }
+
+    const krCount = parseInt((formData.get("kr_count") as string) || "0", 10)
+
+    for (let i = 0; i < krCount; i++) {
+      const isNew = formData.get(`kr_${i}_new`) === "true"
+      const krTitle = (formData.get(`kr_${i}_title`) as string)?.trim()
+      const metric = (formData.get(`kr_${i}_metric`) as string)?.trim()
+      const baselineRaw = (formData.get(`kr_${i}_baseline`) as string)?.trim()
+      const targetRaw = (formData.get(`kr_${i}_target`) as string)?.trim()
+      const dueDateRaw = (formData.get(`kr_${i}_dueDate`) as string)?.trim()
+
+      const baseline = baselineRaw ? parseFloat(baselineRaw) : null
+      const target = targetRaw ? parseFloat(targetRaw) : NaN
+      const dueDate = dueDateRaw ? new Date(dueDateRaw) : null
+      const validDueDate = dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null
+
+      if (isNew) {
+        if (!krTitle || !metric || Number.isNaN(target)) continue
+        promises.push(
+          addKeyResultToObjective(objId, {
+            title: krTitle,
+            metric,
+            baseline,
+            target,
+            current: baseline ?? 0,
+            dueDate: validDueDate,
+          }),
+        )
+      } else {
         const krId = formData.get(`kr_${i}_id`) as string
-        if (krId !== kr.id) continue
+        const originalKR = objective?.keyResults.find((kr) => kr.id === krId)
+        if (!originalKR) continue
 
-        const krTitle = (formData.get(`kr_${i}_title`) as string)?.trim()
-        const metric = (formData.get(`kr_${i}_metric`) as string)?.trim()
-        const baselineRaw = (formData.get(`kr_${i}_baseline`) as string)?.trim()
-        const targetRaw = (formData.get(`kr_${i}_target`) as string)?.trim()
-        const dueDateRaw = (formData.get(`kr_${i}_dueDate`) as string)?.trim()
+        const oldDueDate = originalKR.dueDate ? new Date(originalKR.dueDate).toISOString().slice(0, 10) : null
+        const newDueDateStr = validDueDate ? validDueDate.toISOString().slice(0, 10) : null
 
-        const baseline = baselineRaw ? parseFloat(baselineRaw) : null
-        const target = targetRaw ? parseFloat(targetRaw) : NaN
-        const newDueDate = dueDateRaw ? new Date(dueDateRaw) : null
-        const oldDueDate = kr.dueDate ? new Date(kr.dueDate).toISOString().slice(0, 10) : null
-        const newDueDateStr = newDueDate ? newDueDate.toISOString().slice(0, 10) : null
-
-        const titleChanged = krTitle && krTitle !== kr.title
-        const metricChanged = metric && metric !== kr.metric
-        const baselineChanged = baseline !== kr.baseline
-        const targetChanged = !Number.isNaN(target) && target !== kr.target
+        const titleChanged = krTitle && krTitle !== originalKR.title
+        const metricChanged = metric && metric !== originalKR.metric
+        const baselineChanged = baseline !== originalKR.baseline
+        const targetChanged = !Number.isNaN(target) && target !== originalKR.target
         const dueDateChanged = newDueDateStr !== oldDueDate
 
         if (titleChanged || metricChanged || baselineChanged || targetChanged || dueDateChanged) {
@@ -106,8 +171,8 @@ export function CommitmentOverview({
           if (metricChanged) data.metric = metric
           if (baselineChanged) data.baseline = baseline
           if (targetChanged) data.target = target
-          if (dueDateChanged) data.dueDate = newDueDate && !Number.isNaN(newDueDate.getTime()) ? newDueDate : null
-          promises.push(updateKeyResultDefinition(kr.id, data))
+          if (dueDateChanged) data.dueDate = validDueDate
+          promises.push(updateKeyResultDefinition(krId, data))
         }
       }
     }
@@ -151,13 +216,23 @@ export function CommitmentOverview({
         <form action={handleSubmit}>
           <div className="space-y-8">
             <TeamOkrHeading commitment={commitment} editMode />
-            <TeamOkrsSection commitment={commitment} editMode />
+            <TeamOkrsSection
+              commitment={commitment}
+              editMode
+              editableKRs={editableKRs}
+              onAddKR={handleAddKR}
+              onDeleteKR={handleDeleteKR}
+            />
           </div>
           <div className="mt-8 flex items-center justify-end gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setEditMode(false)}
+              onClick={() => {
+                setEditMode(false)
+                setEditableKRs(buildEditableKRs())
+                setDeletedKRIds([])
+              }}
             >
               Cancel
             </Button>
@@ -173,7 +248,7 @@ export function CommitmentOverview({
           <CommitmentStatusBar
             commitment={commitment}
             teamId={teamId}
-            onEdit={() => setEditMode(true)}
+            onEdit={enterEditMode}
           />
 
           {commitment.status === "COMPLETED" && (

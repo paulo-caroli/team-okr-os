@@ -1,3 +1,5 @@
+"use client"
+
 import type { CommitmentView, KeyResult, ObjectiveView } from "@/lib/domain/commitment"
 import {
   aggregateKeyResultProgress,
@@ -8,10 +10,26 @@ import { SectionHeader } from "@/components/ui/section-header"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+
+export interface EditableKR {
+  _tempId?: string
+  id: string
+  title: string
+  metric: string
+  baseline: number | null
+  target: number
+  current: number
+  dueDate: Date | null
+  sortOrder: number
+}
 
 interface TeamOkrsSectionProps {
   commitment: CommitmentView
   editMode?: boolean
+  editableKRs?: EditableKR[]
+  onAddKR?: () => void
+  onDeleteKR?: (index: number) => void
 }
 
 function dueDateStyle(date: Date): string {
@@ -31,76 +49,98 @@ function dueDateLabel(date: Date): string {
   return `Due: ${formatDate(d)}`
 }
 
-function KeyResultRow({
+function KeyResultEditRow({
   kr,
-  editMode,
   krIndex,
+  onDelete,
+  isNew,
+}: {
+  kr: EditableKR
+  krIndex: number
+  onDelete?: () => void
+  isNew: boolean
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+      {!isNew && <input type="hidden" name={`kr_${krIndex}_id`} value={kr.id} />}
+      {isNew && <input type="hidden" name={`kr_${krIndex}_new`} value="true" />}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <Input
+            name={`kr_${krIndex}_title`}
+            label="Key Result"
+            defaultValue={kr.title}
+            required
+          />
+        </div>
+        {onDelete && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="mt-6 shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+          >
+            Remove
+          </Button>
+        )}
+      </div>
+      <div className="mt-3">
+        <Input
+          name={`kr_${krIndex}_metric`}
+          label="Metric"
+          defaultValue={kr.metric}
+          required
+        />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        <Input
+          name={`kr_${krIndex}_baseline`}
+          type="number"
+          step="any"
+          label="Baseline (optional)"
+          defaultValue={kr.baseline !== null ? String(kr.baseline) : ""}
+        />
+        <Input
+          name={`kr_${krIndex}_target`}
+          type="number"
+          step="any"
+          label="Target"
+          defaultValue={String(kr.target)}
+          required
+        />
+        <div className="space-y-1.5">
+          <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Current
+          </span>
+          <div className="flex h-10 items-center rounded-lg border border-zinc-100 bg-zinc-50 px-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+            {isNew ? (kr.baseline ?? 0) : kr.current}
+          </div>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">Updated via check-ins</p>
+        </div>
+      </div>
+      <div className="mt-3">
+        <Input
+          name={`kr_${krIndex}_dueDate`}
+          type="date"
+          label="Due date (optional)"
+          defaultValue={kr.dueDate ? new Date(kr.dueDate).toISOString().slice(0, 10) : ""}
+          hint="Defaults to the Team OKR cycle end date"
+        />
+      </div>
+    </div>
+  )
+}
+
+function KeyResultReadRow({
+  kr,
   cycleEndDate,
 }: {
   kr: KeyResult
-  editMode?: boolean
-  krIndex: number
   cycleEndDate: Date
 }) {
   const krPct = Math.round(keyResultProgressPercent(kr))
   const dueDate = kr.dueDate ?? cycleEndDate
-
-  if (editMode) {
-    return (
-      <div className="rounded-lg border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700 dark:bg-zinc-800/50">
-        <input type="hidden" name={`kr_${krIndex}_id`} value={kr.id} />
-        <Input
-          name={`kr_${krIndex}_title`}
-          label="Key Result"
-          defaultValue={kr.title}
-          required
-        />
-        <div className="mt-3">
-          <Input
-            name={`kr_${krIndex}_metric`}
-            label="Metric"
-            defaultValue={kr.metric}
-            required
-          />
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          <Input
-            name={`kr_${krIndex}_baseline`}
-            type="number"
-            step="any"
-            label="Baseline (optional)"
-            defaultValue={kr.baseline !== null ? String(kr.baseline) : ""}
-          />
-          <Input
-            name={`kr_${krIndex}_target`}
-            type="number"
-            step="any"
-            label="Target"
-            defaultValue={String(kr.target)}
-            required
-          />
-          <div className="space-y-1.5">
-            <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Current
-            </span>
-            <div className="flex h-10 items-center rounded-lg border border-zinc-100 bg-zinc-50 px-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
-              {kr.current}
-            </div>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">Updated via check-ins</p>
-          </div>
-        </div>
-        <div className="mt-3">
-          <Input
-            name={`kr_${krIndex}_dueDate`}
-            type="date"
-            label="Due date (optional)"
-            defaultValue={kr.dueDate ? new Date(kr.dueDate).toISOString().slice(0, 10) : ""}
-            hint="Defaults to the Team OKR cycle end date"
-          />
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/30">
@@ -130,12 +170,19 @@ function ObjectiveCard({
   objective,
   editMode,
   cycleEndDate,
+  editableKRs,
+  onAddKR,
+  onDeleteKR,
 }: {
   objective: ObjectiveView
   editMode?: boolean
   cycleEndDate: Date
+  editableKRs?: EditableKR[]
+  onAddKR?: () => void
+  onDeleteKR?: (index: number) => void
 }) {
   const pct = Math.round(aggregateKeyResultProgress(objective))
+  const krsToRender = editMode ? editableKRs ?? [] : objective.keyResults
 
   return (
     <Card className="p-5">
@@ -200,30 +247,53 @@ function ObjectiveCard({
           Measurable outcomes that show real progress toward the objective.
         </p>
 
-        {objective.keyResults.length === 0 ? (
+        <input type="hidden" name="kr_count" value={krsToRender.length} />
+
+        {krsToRender.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
             No key results yet. Add 2–4 key results to measure progress.
           </p>
         ) : (
           <div className="mt-4 space-y-3">
-            {objective.keyResults.map((kr, i) => (
-              <KeyResultRow
-                key={kr.id}
-                kr={kr}
-                editMode={editMode}
-                krIndex={i}
-                cycleEndDate={cycleEndDate}
-              />
-            ))}
+            {editMode
+              ? (krsToRender as EditableKR[]).map((kr, i) => (
+                  <KeyResultEditRow
+                    key={kr._tempId ?? kr.id}
+                    kr={kr}
+                    krIndex={i}
+                    isNew={!!kr._tempId}
+                    onDelete={onDeleteKR ? () => onDeleteKR(i) : undefined}
+                  />
+                ))
+              : (krsToRender as KeyResult[]).map((kr) => (
+                  <KeyResultReadRow
+                    key={kr.id}
+                    kr={kr}
+                    cycleEndDate={cycleEndDate}
+                  />
+                ))}
           </div>
         )}
 
+        {editMode && onAddKR && (
+          <div className="mt-4">
+            <Button type="button" variant="ghost" size="sm" onClick={onAddKR}>
+              + Add Key Result
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   )
 }
 
-export function TeamOkrsSection({ commitment, editMode }: TeamOkrsSectionProps) {
+export function TeamOkrsSection({
+  commitment,
+  editMode,
+  editableKRs,
+  onAddKR,
+  onDeleteKR,
+}: TeamOkrsSectionProps) {
   return (
     <div>
       <SectionHeader
@@ -237,6 +307,9 @@ export function TeamOkrsSection({ commitment, editMode }: TeamOkrsSectionProps) 
           objective={commitment.objectives[0]}
           editMode={editMode}
           cycleEndDate={commitment.cycle.endDate}
+          editableKRs={editableKRs}
+          onAddKR={onAddKR}
+          onDeleteKR={onDeleteKR}
         />
       ) : (
         <Card className="p-5">

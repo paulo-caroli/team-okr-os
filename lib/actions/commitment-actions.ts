@@ -567,3 +567,66 @@ export async function setPrimaryTeamOkr(teamId: string, teamOkrId: string) {
   revalidatePath(`/team/${teamId}`)
   revalidatePath(`/team/${teamId}/commitment/${teamOkrId}`)
 }
+
+export async function addKeyResultToObjective(
+  objectiveId: string,
+  data: {
+    title: string
+    metric: string
+    baseline: number | null
+    target: number
+    current: number
+    dueDate: Date | null
+  },
+) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const objective = await db.objective.findUnique({
+    where: { id: objectiveId },
+    include: { teamOkr: { select: { teamId: true, id: true } } },
+  })
+  if (!objective) return
+
+  const agg = await db.keyResult.aggregate({
+    where: { objectiveId },
+    _max: { sortOrder: true },
+  })
+  const nextOrder = (agg._max.sortOrder ?? -1) + 1
+
+  await db.keyResult.create({
+    data: {
+      objectiveId,
+      title: data.title,
+      metric: data.metric,
+      baseline: data.baseline,
+      target: data.target,
+      current: data.current,
+      dueDate: data.dueDate,
+      sortOrder: nextOrder,
+    },
+  })
+
+  revalidatePath(`/team/${objective.teamOkr.teamId}`)
+  revalidatePath(`/team/${objective.teamOkr.teamId}/commitment/${objective.teamOkr.id}`)
+}
+
+export async function deleteKeyResult(keyResultId: string) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
+  const kr = await db.keyResult.findUnique({
+    where: { id: keyResultId },
+    include: {
+      objective: {
+        include: { teamOkr: { select: { teamId: true, id: true } } },
+      },
+    },
+  })
+  if (!kr) return
+
+  await db.keyResult.delete({ where: { id: keyResultId } })
+
+  revalidatePath(`/team/${kr.objective.teamOkr.teamId}`)
+  revalidatePath(`/team/${kr.objective.teamOkr.teamId}/commitment/${kr.objective.teamOkr.id}`)
+}
