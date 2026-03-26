@@ -6,7 +6,7 @@ import {
   aggregateKeyResultProgress,
   keyResultProgressPercent,
 } from "@/lib/domain/commitment"
-import { updateKeyResultCurrent, createKeyResult } from "@/lib/actions/commitment-actions"
+import { createKeyResult } from "@/lib/actions/commitment-actions"
 import { SectionHeader } from "@/components/ui/section-header"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,31 +21,13 @@ interface TeamOkrsSectionProps {
 
 function KeyResultRow({
   kr,
-  readOnly,
   editMode,
   krIndex,
 }: {
   kr: KeyResult
-  readOnly: boolean
   editMode?: boolean
   krIndex: number
 }) {
-  const [editing, setEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  async function handleSave(formData: FormData) {
-    setSaving(true)
-    const rawValue = (formData.get("currentValue") as string)?.trim()
-    const value = rawValue ? parseFloat(rawValue) : NaN
-    if (Number.isNaN(value)) {
-      setSaving(false)
-      return
-    }
-    await updateKeyResultCurrent(kr.id, value)
-    setEditing(false)
-    setSaving(false)
-  }
-
   const krPct = Math.round(keyResultProgressPercent(kr))
 
   if (editMode) {
@@ -66,7 +48,7 @@ function KeyResultRow({
             required
           />
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-3 gap-3">
           <Input
             name={`kr_${krIndex}_baseline`}
             type="number"
@@ -82,6 +64,15 @@ function KeyResultRow({
             defaultValue={String(kr.target)}
             required
           />
+          <div className="space-y-1.5">
+            <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Current
+            </span>
+            <div className="flex h-10 items-center rounded-lg border border-zinc-100 bg-zinc-50 px-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+              {kr.current}
+            </div>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500">Updated via check-ins</p>
+          </div>
         </div>
       </div>
     )
@@ -105,35 +96,7 @@ function KeyResultRow({
           </div>
         </div>
         <div className="text-right">
-          {readOnly ? (
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{kr.current}</span>
-          ) : editing ? (
-            <form action={handleSave} className="flex items-center gap-2">
-              <Input
-                name="currentValue"
-                type="number"
-                step="any"
-                defaultValue={String(kr.current)}
-                placeholder="Value"
-                className="h-7 w-24 text-xs"
-                required
-                autoFocus
-              />
-              <Button size="sm" type="submit" loading={saving}>
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" type="button" onClick={() => setEditing(false)}>
-                Cancel
-              </Button>
-            </form>
-          ) : (
-            <span
-              className="cursor-pointer text-sm font-medium text-zinc-700 underline decoration-dashed underline-offset-4 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
-              onClick={() => setEditing(true)}
-            >
-              {kr.current}
-            </span>
-          )}
+          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{kr.current}</span>
         </div>
       </div>
     </div>
@@ -275,7 +238,6 @@ function ObjectiveCard({
               <KeyResultRow
                 key={kr.id}
                 kr={kr}
-                readOnly={readOnly}
                 editMode={editMode}
                 krIndex={i}
               />
