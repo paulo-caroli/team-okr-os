@@ -50,7 +50,8 @@ export type TeamOkrView = CommitmentView
 
 /**
  * Core progress ratio for a key result.
- * Returns a decimal (e.g. 0.75 = 75%). Not clamped — may be negative or > 1.
+ * Returns a decimal between 0 and 1 (e.g. 0.75 = 75%).
+ * Handles both increasing (target > baseline) and decreasing (target < baseline) KRs.
  */
 export function calculateProgress(
   current: number,
@@ -58,13 +59,13 @@ export function calculateProgress(
   baseline: number | null,
 ): number {
   if (baseline !== null && baseline !== undefined) {
-    const denominator = target - baseline
-    if (denominator === 0) return 0
-    return (current - baseline) / denominator
+    if (baseline === target) return 0
+    const progress = (current - baseline) / (target - baseline)
+    return Math.max(0, Math.min(progress, 1))
   }
 
   if (!target || target === 0) return 0
-  return current / target
+  return Math.max(0, Math.min(current / target, 1))
 }
 
 /** Progress percentage for one key result. Not clamped — may be negative or exceed 100. */
