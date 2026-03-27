@@ -29,11 +29,13 @@ async function enrichKeyResultSnapshots(
     krs.map((kr) => [kr.id, kr.title || kr.metric])
   )
 
-  return ids.map((keyResultId) => ({
-    keyResultId,
-    label: labelMap.get(keyResultId) ?? keyResultId,
-    value: snapshots[keyResultId]!,
-  }))
+  return ids
+    .filter((id) => labelMap.has(id))
+    .map((keyResultId) => ({
+      keyResultId,
+      label: labelMap.get(keyResultId)!,
+      value: snapshots[keyResultId]!,
+    }))
 }
 
 export async function getCheckIns(
