@@ -104,13 +104,28 @@ export function sortKeyResultsByDate(keyResults: KeyResult[], cycleEndDate: Date
   })
 }
 
+interface ExportInitiative {
+  name: string
+  hypothesis: string
+  status: string
+  expectedImpact: { keyResultIds: string[] } | null
+  conclusionReason?: string | null
+  conclusionImpact?: string | null
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  NOT_STARTED: "Not started",
+  IN_PROGRESS: "In progress",
+  CONCLUDED: "Concluded",
+}
+
 /**
  * Build a clean, human-readable text representation of a Team OKR
  * suitable for pasting into ChatGPT or similar analysis tools.
  */
 export function buildTeamOkrExport(
   commitment: CommitmentView,
-  initiatives: { name: string; status: string; expectedImpact: { keyResultIds: string[] } | null }[],
+  initiatives: ExportInitiative[],
   fmtDate: (d: Date) => string,
 ): string {
   const { cycle } = commitment
@@ -125,7 +140,7 @@ export function buildTeamOkrExport(
 
   const obj = commitment.objectives[0]
   if (obj) {
-    lines.push(`Objective:`)
+    lines.push("Objective:")
     lines.push(obj.title)
     if (obj.description?.trim()) {
       lines.push(obj.description.trim())
@@ -144,12 +159,17 @@ export function buildTeamOkrExport(
           : `End of cycle (${fmtDate(cycle.endDate)})`
 
         lines.push(`${i + 1}. ${kr.title}`)
-        lines.push(`   Metric: ${kr.metric}`)
-        if (kr.baseline !== null) {
-          lines.push(`   Baseline: ${kr.baseline} · Current: ${kr.current} · Target: ${kr.target}`)
-        } else {
-          lines.push(`   Current: ${kr.current} · Target: ${kr.target}`)
+
+        if (kr.metric) {
+          lines.push(`   Metric: ${kr.metric}`)
         }
+
+        const progressParts: string[] = []
+        if (kr.baseline !== null) progressParts.push(`Baseline ${kr.baseline}`)
+        progressParts.push(`Current ${kr.current}`)
+        progressParts.push(`Target ${kr.target}`)
+        lines.push(`   Progress: ${progressParts.join(" \u00b7 ")}`)
+
         lines.push(`   Target date: ${datePart}`)
 
         const related = initiatives
@@ -164,13 +184,45 @@ export function buildTeamOkrExport(
           lines.push("")
           lines.push("   Initiatives (current bets):")
           for (const init of related) {
-            const statusHint =
-              init.status === "IN_PROGRESS" ? " (In progress)" : ""
-            lines.push(`   - ${init.name}${statusHint}`)
+            const label = STATUS_LABEL[init.status]
+            const hint = label && init.status !== "NOT_STARTED" ? ` (${label})` : ""
+            lines.push(`   - ${init.name}${hint}`)
           }
         }
         lines.push("")
       })
+    }
+  }
+
+  if (initiatives.length > 0) {
+    lines.push("---")
+    lines.push("")
+    lines.push("Initiative details (full context)")
+    lines.push("")
+
+    for (const init of initiatives) {
+      lines.push(init.name)
+      lines.push("")
+
+      const label = STATUS_LABEL[init.status]
+      if (label) {
+        lines.push(`Status: ${label}`)
+      }
+
+      if (init.hypothesis?.trim()) {
+        lines.push(`Hypothesis: ${init.hypothesis.trim()}`)
+      }
+
+      if (init.status === "CONCLUDED") {
+        if (init.conclusionReason?.trim()) {
+          lines.push(`Conclusion: ${init.conclusionReason.trim()}`)
+        }
+        if (init.conclusionImpact?.trim()) {
+          lines.push(`Impact: ${init.conclusionImpact.trim()}`)
+        }
+      }
+
+      lines.push("")
     }
   }
 
