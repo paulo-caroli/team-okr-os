@@ -135,10 +135,27 @@ export function buildTeamOkrExport(
     : dateRange
 
   const lines: string[] = []
-  lines.push(`Team OKR \u2014 ${cycleLabel}`)
+
+  const title = commitment.title?.trim()
+  if (title) {
+    lines.push(`Team OKR \u2014 ${title}`)
+    lines.push(cycleLabel)
+  } else {
+    lines.push(`Team OKR \u2014 ${cycleLabel}`)
+  }
   lines.push("")
 
+  const strategicContext = commitment.teamObjective?.trim()
+  if (strategicContext) {
+    lines.push("Strategic context:")
+    lines.push(strategicContext)
+    lines.push("")
+  }
+
   const obj = commitment.objectives[0]
+  const allKRs = obj ? obj.keyResults : []
+  const krTitleMap = new Map(allKRs.map((kr) => [kr.id, kr.title]))
+
   if (obj) {
     lines.push("Objective:")
     lines.push(obj.title)
@@ -147,7 +164,7 @@ export function buildTeamOkrExport(
     }
     lines.push("")
 
-    const sortedKRs = sortKeyResultsByDate(obj.keyResults, cycle.endDate)
+    const sortedKRs = sortKeyResultsByDate(allKRs, cycle.endDate)
     if (sortedKRs.length > 0) {
       lines.push("Key Results:")
       lines.push("")
@@ -213,6 +230,17 @@ export function buildTeamOkrExport(
         lines.push(`Hypothesis: ${init.hypothesis.trim()}`)
       }
 
+      const impactIds = init.expectedImpact?.keyResultIds ?? []
+      const impactTitles = impactIds
+        .map((id) => krTitleMap.get(id))
+        .filter(Boolean) as string[]
+      if (impactTitles.length > 0) {
+        lines.push("Impacts:")
+        for (const t of impactTitles) {
+          lines.push(`- ${t}`)
+        }
+      }
+
       if (init.status === "CONCLUDED") {
         if (init.conclusionReason?.trim()) {
           lines.push(`Conclusion: ${init.conclusionReason.trim()}`)
@@ -226,14 +254,7 @@ export function buildTeamOkrExport(
     }
   }
 
-  lines.push("---")
-  lines.push("")
-  lines.push("Please analyze this Team OKR:")
-  lines.push("- Are the Key Results outcome-focused?")
-  lines.push("- Are the initiatives good bets to move the KRs?")
-  lines.push("- What would you improve?")
-
-  return lines.join("\n")
+  return lines.join("\n").trimEnd() + "\n"
 }
 
 export function toCommitmentView(raw: {
