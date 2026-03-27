@@ -156,7 +156,8 @@ export function buildTeamOkrExport(
   }
 
   const strategicContext = commitment.teamObjective?.trim()
-  if (strategicContext) {
+  const objectiveText = obj?.title?.trim()
+  if (strategicContext && strategicContext !== objectiveText) {
     lines.push("Strategic context:")
     lines.push(strategicContext)
     lines.push("")

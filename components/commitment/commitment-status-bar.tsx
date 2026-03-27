@@ -5,7 +5,6 @@ import { buildTeamOkrExport } from "@/lib/domain/commitment"
 import type { InitiativeView } from "@/lib/domain/initiative"
 import { CompleteCommitmentModal } from "./complete-commitment-modal"
 import { AbandonCommitmentModal } from "./abandon-commitment-modal"
-import { CreateTeamOkrButton } from "./create-team-okr-button"
 import { setPrimaryTeamOkr } from "@/lib/actions/commitment-actions"
 import { Button } from "@/components/ui/button"
 import { formatDateShort } from "@/lib/utils"
@@ -51,13 +50,6 @@ export function CommitmentStatusBar({
             Edit Team OKR
           </Button>
         )}
-        <CreateTeamOkrButton
-          teamId={teamId}
-          hasActiveOkr
-          variant="ghost"
-          size="sm"
-          label="New Team OKR"
-        />
         {!commitment.isPrimary && (
           <Button
             size="sm"
