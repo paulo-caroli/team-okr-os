@@ -29,7 +29,7 @@ export default async function NewCheckInPage({
           ← Back to Team OKR
         </Link>
         <h1 className="mt-3 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-          Impact Check-in (GRIP)
+          Check-in
         </h1>
         <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
           A structured conversation about impact. Not a status report.

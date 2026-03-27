@@ -61,7 +61,7 @@ export default async function LandingPage() {
             </li>
             <li className="flex gap-3">
               <span className="shrink-0 text-zinc-400 dark:text-zinc-500">—</span>
-              <span>Structured impact conversations (GRIP)</span>
+              <span>Structured check-in conversations</span>
             </li>
             <li className="flex gap-3">
               <span className="shrink-0 text-zinc-400 dark:text-zinc-500">—</span>

@@ -403,7 +403,7 @@ export function GripForm({
           </Card>
         </div>
 
-        {/* ── GRIP Sections ── */}
+        {/* ── Check-in Sections ── */}
         <div className="space-y-10">
 
           {/* G — Goals Confidence */}

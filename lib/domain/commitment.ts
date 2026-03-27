@@ -82,7 +82,7 @@ export function aggregateKeyResultProgress(objective: ObjectiveView): number {
   return sum / krs.length
 }
 
-/** All key results for a Team OKR (initiatives, GRIP). */
+/** All key results for a Team OKR (initiatives, check-ins). */
 export function flatKeyResults(objectives: ObjectiveView[]): KeyResult[] {
   return objectives.flatMap((o) => o.keyResults)
 }

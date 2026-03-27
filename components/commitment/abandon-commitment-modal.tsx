@@ -58,7 +58,7 @@ export function AbandonCommitmentModal({
           <br />
           <br />
           Objective and key result definitions will remain locked as recorded.
-          All GRIP history will be preserved.
+          All check-in history will be preserved.
         </p>
 
         <form action={formAction} className="mt-6 space-y-4">

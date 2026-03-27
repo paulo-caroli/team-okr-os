@@ -239,7 +239,7 @@ function KeyResultReadRow({
       {relatedInitiatives.length > 0 && (
         <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-            Initiatives (current bets)
+            Initiatives
           </p>
           <ul className="mt-1.5 space-y-0.5">
             {relatedInitiatives.map((init) => {

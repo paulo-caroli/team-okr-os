@@ -21,7 +21,7 @@ export function CheckInTimeline({
   return (
     <div>
       <SectionHeader
-        title="Impact Check-ins"
+        title="Check-ins"
         description={`${checkIns.length} sessions`}
         className="mb-4"
         action={
@@ -44,7 +44,7 @@ export function CheckInTimeline({
         ) : (
           <EmptyState
             title="No check-ins yet"
-            description="Impact check-ins (GRIP) are structured conversations about whether key results are moving."
+            description="Check-ins are structured conversations about whether key results are moving."
             action={
               <Link href={`/team/${teamId}/commitment/${commitmentId}/check-in/new`}>
                 <Button size="sm">Run first check-in</Button>

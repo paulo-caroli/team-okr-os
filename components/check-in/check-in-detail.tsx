@@ -20,7 +20,7 @@ export function CheckInDetail({ checkIn }: CheckInDetailProps) {
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            Impact Check-in
+            Check-in
           </h1>
           <Badge variant={confidenceVariant[checkIn.confidence]}>
             {checkIn.confidence} confidence
