@@ -7,6 +7,7 @@ import {
   aggregateKeyResultProgress,
   keyResultProgressPercent,
   sortKeyResultsByDate,
+  flatKeyResults,
 } from "@/lib/domain/commitment"
 import { formatDateShort } from "@/lib/utils"
 import { SectionHeader } from "@/components/ui/section-header"
@@ -14,6 +15,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { InitiativeForm } from "@/components/initiative/initiative-form"
 
 export interface EditableKR {
   _tempId?: string
@@ -34,6 +36,8 @@ interface TeamOkrsSectionProps {
   onAddKR?: () => void
   onDeleteKR?: (index: number) => void
   initiatives?: InitiativeView[]
+  teamId?: string
+  readOnly?: boolean
 }
 
 function dueDateStyle(date: Date): string {
@@ -164,15 +168,38 @@ function KeyResultEditRow({
   )
 }
 
+function statusColor(status: string): string {
+  if (status === "IN_PROGRESS") return "text-blue-500 dark:text-blue-400"
+  if (status === "CONCLUDED") return "text-emerald-500 dark:text-emerald-400"
+  return "text-zinc-400 dark:text-zinc-500"
+}
+
+function statusText(status: string): string {
+  if (status === "IN_PROGRESS") return "In progress"
+  if (status === "CONCLUDED") return "Concluded"
+  return "Not started"
+}
+
 function KeyResultReadRow({
   kr,
   cycleEndDate,
   initiatives,
+  commitmentId,
+  teamId,
+  allKeyResults,
+  readOnly,
 }: {
   kr: KeyResult
   cycleEndDate: Date
   initiatives?: InitiativeView[]
+  commitmentId: string
+  teamId: string
+  allKeyResults: KeyResult[]
+  readOnly: boolean
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
   const krPct = Math.round(keyResultProgressPercent(kr))
   const hasCustomDate = !!kr.dueDate
   const effectiveDate = kr.dueDate ?? cycleEndDate
@@ -182,6 +209,11 @@ function KeyResultReadRow({
       init.status !== "CONCLUDED" &&
       init.expectedImpact?.keyResultIds.includes(kr.id)
   ) ?? []
+
+  function toggleExpand(id: string) {
+    setEditingId(null)
+    setExpandedId((prev) => (prev === id ? null : id))
+  }
 
   return (
     <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/30">
@@ -207,44 +239,111 @@ function KeyResultReadRow({
       {relatedInitiatives.length > 0 && (
         <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-            Initiatives
+            Initiatives (current bets)
           </p>
-          <ul className="mt-1.5 space-y-1">
+          <ul className="mt-1.5 space-y-0.5">
             {relatedInitiatives.map((init) => {
-              const initDueDate = null as Date | null
-              const exceedsKrDate = false
+              const isExpanded = expandedId === init.id
+              const isEditing = editingId === init.id
+              const impactIds = init.expectedImpact?.keyResultIds ?? []
+              const impactTitles = impactIds
+                .map((id) => allKeyResults.find((k) => k.id === id)?.title)
+                .filter(Boolean) as string[]
+
               return (
-                <li key={init.id} className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                  <span className="mt-0.5 text-zinc-300 dark:text-zinc-600">&bull;</span>
-                  <div className="min-w-0 flex-1">
-                    <span>{init.name}</span>
-                    {initDueDate && (
-                      <span className="ml-2 text-zinc-400 dark:text-zinc-500">
-                        Due: {formatDateShort(initDueDate)}
+                <li key={init.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(init.id)}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded px-1 py-1.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                  >
+                    <span
+                      className="inline-block shrink-0 text-[9px] text-zinc-300 transition-transform duration-150 dark:text-zinc-600"
+                      style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
+                    >
+                      &#9654;
+                    </span>
+                    <span className="min-w-0 flex-1 text-zinc-700 dark:text-zinc-300">
+                      {init.name}
+                      <span className={`ml-1.5 text-[10px] ${statusColor(init.status)}`}>
+                        &middot; {statusText(init.status)}
                       </span>
-                    )}
-                    {exceedsKrDate && (
-                      <span className="ml-2 text-amber-500 dark:text-amber-400">
-                        \u26a0 Initiative due date exceeds KR target date
-                      </span>
-                    )}
-                  </div>
-                  <span className={`shrink-0 text-[10px] ${
-                    init.status === "IN_PROGRESS"
-                      ? "text-blue-500 dark:text-blue-400"
-                      : "text-zinc-400 dark:text-zinc-500"
-                  }`}>
-                    {init.status === "IN_PROGRESS" ? "In progress" : "Not started"}
-                  </span>
+                    </span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="ml-5 mt-1 mb-2 space-y-2 overflow-hidden rounded-md border border-zinc-100 bg-white px-3 py-3 text-xs dark:border-zinc-700/50 dark:bg-zinc-800/40">
+                      {isEditing ? (
+                        <InitiativeForm
+                          commitmentId={commitmentId}
+                          teamId={teamId}
+                          keyResults={allKeyResults}
+                          initiative={init}
+                          onSuccess={() => setEditingId(null)}
+                          onCancel={() => setEditingId(null)}
+                          variant="plain"
+                        />
+                      ) : (
+                        <>
+                          {init.hypothesis?.trim() && (
+                            <div>
+                              <p className="font-medium text-zinc-500 dark:text-zinc-400">Why this helps</p>
+                              <p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-zinc-700 dark:text-zinc-300">
+                                {init.hypothesis}
+                              </p>
+                            </div>
+                          )}
+
+                          {impactTitles.length > 0 && (
+                            <div>
+                              <p className="font-medium text-zinc-500 dark:text-zinc-400">
+                                Impacts{impactTitles.length > 1 ? ` ${impactTitles.length} KRs` : ""}
+                              </p>
+                              <ul className="mt-0.5 space-y-0.5">
+                                {impactTitles.map((t) => (
+                                  <li key={t} className="text-zinc-600 dark:text-zinc-400">
+                                    &rarr; {t}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {init.status === "CONCLUDED" && init.conclusionReason?.trim() && (
+                            <div>
+                              <p className="font-medium text-zinc-500 dark:text-zinc-400">Conclusion</p>
+                              <p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-zinc-700 dark:text-zinc-300">
+                                {init.conclusionReason}
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex gap-3 pt-1">
+                            {!readOnly && (
+                              <button
+                                type="button"
+                                onClick={() => setEditingId(init.id)}
+                                className="text-[11px] text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedId(null)}
+                              className="text-[11px] text-zinc-400 underline hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                            >
+                              Collapse
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </li>
               )
             })}
           </ul>
-          {relatedInitiatives.length >= 5 && (
-            <p className="mt-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
-              Limit: 5 to keep focus
-            </p>
-          )}
         </div>
       )}
     </div>
@@ -259,6 +358,10 @@ function ObjectiveCard({
   onAddKR,
   onDeleteKR,
   initiatives,
+  commitmentId,
+  teamId,
+  allKeyResults,
+  readOnly,
 }: {
   objective: ObjectiveView
   editMode?: boolean
@@ -267,6 +370,10 @@ function ObjectiveCard({
   onAddKR?: () => void
   onDeleteKR?: (index: number) => void
   initiatives?: InitiativeView[]
+  commitmentId: string
+  teamId: string
+  allKeyResults: KeyResult[]
+  readOnly: boolean
 }) {
   const pct = Math.round(aggregateKeyResultProgress(objective))
 
@@ -361,6 +468,10 @@ function ObjectiveCard({
                     kr={kr}
                     cycleEndDate={cycleEndDate}
                     initiatives={initiatives}
+                    commitmentId={commitmentId}
+                    teamId={teamId}
+                    allKeyResults={allKeyResults}
+                    readOnly={readOnly}
                   />
                 ))}
           </div>
@@ -385,7 +496,11 @@ export function TeamOkrsSection({
   onAddKR,
   onDeleteKR,
   initiatives,
+  teamId,
+  readOnly,
 }: TeamOkrsSectionProps) {
+  const allKeyResults = flatKeyResults(commitment.objectives)
+
   return (
     <div>
       <SectionHeader
@@ -403,6 +518,10 @@ export function TeamOkrsSection({
           onAddKR={onAddKR}
           onDeleteKR={onDeleteKR}
           initiatives={initiatives}
+          commitmentId={commitment.id}
+          teamId={teamId ?? commitment.teamId}
+          allKeyResults={allKeyResults}
+          readOnly={readOnly ?? commitment.status !== "ACTIVE"}
         />
       ) : (
         <Card className="p-5">
