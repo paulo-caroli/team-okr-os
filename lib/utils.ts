@@ -13,6 +13,13 @@ export function formatDate(date: Date): string {
   }).format(new Date(date))
 }
 
+export function formatDateShort(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(date))
+}
+
 export function daysRemaining(endDate: Date): number {
   const now = new Date()
   const end = new Date(endDate)

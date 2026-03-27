@@ -1,5 +1,5 @@
 import type { CommitmentView, CommitmentStatus } from "@/lib/domain/commitment"
-import { formatDate, cycleProgress, daysRemaining } from "@/lib/utils"
+import { formatDateShort, daysRemaining } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -27,33 +27,32 @@ export function TeamOkrHeading({ commitment, editMode }: TeamOkrHeadingProps) {
   const objective = commitment.teamObjective.trim()
   const { cycle } = commitment
 
-  const cycleLabelPart =
-    cycle.label?.trim() ||
-    `${formatDate(cycle.startDate)} — ${formatDate(cycle.endDate)}`
+  const dateRange = `${formatDateShort(cycle.startDate)} \u2192 ${formatDateShort(cycle.endDate)}`
+  const cycleLabelPart = cycle.label?.trim()
+    ? `${cycle.label.trim()} (${dateRange})`
+    : dateRange
   const cycleLine = `Cycle: ${cycleLabelPart}`
 
-  const progressBits: string[] = []
-  if (commitment.status === "ACTIVE" || commitment.status === "DRAFT") {
-    const pct = cycleProgress(cycle.startDate, cycle.endDate)
-    const remaining = daysRemaining(cycle.endDate)
-    progressBits.push(`${pct}% of cycle elapsed`)
-    if (remaining > 0) {
-      progressBits.push(`${remaining} days remaining`)
-    } else {
-      progressBits.push("Cycle ended")
-    }
-  }
+  const isLive = commitment.status === "ACTIVE" || commitment.status === "DRAFT"
+  const remaining = daysRemaining(cycle.endDate)
+  const remainingLine = isLive
+    ? remaining > 0
+      ? `${remaining} days remaining`
+      : "Cycle ended"
+    : null
+
+  const statBits: string[] = []
   if (commitment.initiativeCount > 0) {
-    progressBits.push(
+    statBits.push(
       `${commitment.initiativeCount} initiative${commitment.initiativeCount === 1 ? "" : "s"}`
     )
   }
   if (commitment.checkInCount > 0) {
-    progressBits.push(
+    statBits.push(
       `${commitment.checkInCount} check-in${commitment.checkInCount === 1 ? "" : "s"}`
     )
   }
-  const progressLine = progressBits.length > 0 ? progressBits.join(" · ") : null
+  const statsLine = statBits.length > 0 ? statBits.join(" \u00b7 ") : null
 
   return (
     <header className="space-y-3 border-b border-zinc-200 pb-8 dark:border-zinc-800">
@@ -95,8 +94,11 @@ export function TeamOkrHeading({ commitment, editMode }: TeamOkrHeadingProps) {
 
       <div className="pt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
         <p>{cycleLine}</p>
+        {remainingLine && (
+          <p className="mt-1 font-medium text-zinc-600 dark:text-zinc-300">{remainingLine}</p>
+        )}
         <p className="mt-1">Status: {statusLabel(commitment.status)}</p>
-        {progressLine ? <p className="mt-1">{progressLine}</p> : null}
+        {statsLine && <p className="mt-1">{statsLine}</p>}
       </div>
     </header>
   )

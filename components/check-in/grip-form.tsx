@@ -500,9 +500,12 @@ export function GripForm({
                                         : diffDays <= 7
                                           ? "text-amber-600 dark:text-amber-400"
                                           : "text-zinc-400 dark:text-zinc-500"
+                                      const hasCustomDate = !!kr.dueDate
                                       const label = diffDays < 0
-                                        ? `Overdue · ${formatDate(d)}`
-                                        : `Due: ${formatDate(d)}`
+                                        ? `Overdue \u00b7 ${formatDate(d)}`
+                                        : hasCustomDate
+                                          ? `Target date: ${formatDate(d)}`
+                                          : `Target date: End of cycle (${formatDate(d)})`
                                       return (
                                         <span className={`text-[11px] ${color}`}>{label}</span>
                                       )

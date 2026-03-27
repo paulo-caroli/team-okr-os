@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import type { CommitmentView, KeyResult, ObjectiveView } from "@/lib/domain/commitment"
+import type { InitiativeView } from "@/lib/domain/initiative"
 import {
   aggregateKeyResultProgress,
   keyResultProgressPercent,
 } from "@/lib/domain/commitment"
-import { formatDate } from "@/lib/utils"
+import { formatDateShort } from "@/lib/utils"
 import { SectionHeader } from "@/components/ui/section-header"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -31,6 +32,7 @@ interface TeamOkrsSectionProps {
   editableKRs?: EditableKR[]
   onAddKR?: () => void
   onDeleteKR?: (index: number) => void
+  initiatives?: InitiativeView[]
 }
 
 function dueDateStyle(date: Date): string {
@@ -43,11 +45,20 @@ function dueDateStyle(date: Date): string {
   return "text-zinc-400 dark:text-zinc-500"
 }
 
-function dueDateLabel(date: Date): string {
+function targetDateLabel(date: Date, isFallback: boolean, cycleEndDate?: Date): string {
   const now = new Date()
   const d = new Date(date)
-  if (d.getTime() < now.getTime()) return `Overdue · ${formatDate(d)}`
-  return `Due: ${formatDate(d)}`
+  if (d.getTime() < now.getTime()) return `Overdue \u00b7 ${formatDateShort(d)}`
+  if (isFallback) return `Target date: End of cycle (${formatDateShort(d)})`
+  if (cycleEndDate) {
+    const end = new Date(cycleEndDate)
+    const diffMs = end.getTime() - d.getTime()
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+    if (diffDays > 0) {
+      return `Target date: ${formatDateShort(d)} (${diffDays} day${diffDays === 1 ? "" : "s"} before cycle end)`
+    }
+  }
+  return `Target date: ${formatDateShort(d)}`
 }
 
 function KeyResultEditRow({
@@ -143,9 +154,9 @@ function KeyResultEditRow({
         <Input
           name={`kr_${krIndex}_dueDate`}
           type="date"
-          label="Due date (optional)"
+          label="Target date (optional)"
           defaultValue={kr.dueDate ? new Date(kr.dueDate).toISOString().slice(0, 10) : ""}
-          hint="Defaults to the Team OKR cycle end date"
+          hint="Defaults to the end of cycle"
         />
       </div>
     </div>
@@ -155,21 +166,30 @@ function KeyResultEditRow({
 function KeyResultReadRow({
   kr,
   cycleEndDate,
+  initiatives,
 }: {
   kr: KeyResult
   cycleEndDate: Date
+  initiatives?: InitiativeView[]
 }) {
   const krPct = Math.round(keyResultProgressPercent(kr))
-  const dueDate = kr.dueDate ?? cycleEndDate
+  const hasCustomDate = !!kr.dueDate
+  const effectiveDate = kr.dueDate ?? cycleEndDate
+
+  const relatedInitiatives = initiatives?.filter(
+    (init) =>
+      init.status !== "CONCLUDED" &&
+      init.expectedImpact?.keyResultIds.includes(kr.id)
+  ) ?? []
 
   return (
     <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/30">
       <div className="flex items-baseline gap-2">
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{kr.title}</p>
-        <span className={`text-[11px] ${dueDateStyle(dueDate)}`}>
-          {dueDateLabel(dueDate)}
-        </span>
       </div>
+      <p className={`mt-0.5 text-[11px] ${dueDateStyle(effectiveDate)}`}>
+        {targetDateLabel(effectiveDate, !hasCustomDate, hasCustomDate ? cycleEndDate : undefined)}
+      </p>
       <div className="mt-1">
         <span className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
           Metric
@@ -182,6 +202,50 @@ function KeyResultReadRow({
         <span>Target: {kr.target}</span>
         <span className="font-medium text-zinc-600 dark:text-zinc-300">Progress: {krPct}%</span>
       </div>
+
+      {relatedInitiatives.length > 0 && (
+        <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+            Initiatives
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {relatedInitiatives.map((init) => {
+              const initDueDate = null as Date | null
+              const exceedsKrDate = false
+              return (
+                <li key={init.id} className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <span className="mt-0.5 text-zinc-300 dark:text-zinc-600">&bull;</span>
+                  <div className="min-w-0 flex-1">
+                    <span>{init.name}</span>
+                    {initDueDate && (
+                      <span className="ml-2 text-zinc-400 dark:text-zinc-500">
+                        Due: {formatDateShort(initDueDate)}
+                      </span>
+                    )}
+                    {exceedsKrDate && (
+                      <span className="ml-2 text-amber-500 dark:text-amber-400">
+                        \u26a0 Initiative due date exceeds KR target date
+                      </span>
+                    )}
+                  </div>
+                  <span className={`shrink-0 text-[10px] ${
+                    init.status === "IN_PROGRESS"
+                      ? "text-blue-500 dark:text-blue-400"
+                      : "text-zinc-400 dark:text-zinc-500"
+                  }`}>
+                    {init.status === "IN_PROGRESS" ? "In progress" : "Not started"}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+          {relatedInitiatives.length >= 5 && (
+            <p className="mt-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
+              Limit: 5 to keep focus
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -193,6 +257,7 @@ function ObjectiveCard({
   editableKRs,
   onAddKR,
   onDeleteKR,
+  initiatives,
 }: {
   objective: ObjectiveView
   editMode?: boolean
@@ -200,6 +265,7 @@ function ObjectiveCard({
   editableKRs?: EditableKR[]
   onAddKR?: () => void
   onDeleteKR?: (index: number) => void
+  initiatives?: InitiativeView[]
 }) {
   const pct = Math.round(aggregateKeyResultProgress(objective))
   const krsToRender = editMode ? editableKRs ?? [] : objective.keyResults
@@ -290,6 +356,7 @@ function ObjectiveCard({
                     key={kr.id}
                     kr={kr}
                     cycleEndDate={cycleEndDate}
+                    initiatives={initiatives}
                   />
                 ))}
           </div>
@@ -313,6 +380,7 @@ export function TeamOkrsSection({
   editableKRs,
   onAddKR,
   onDeleteKR,
+  initiatives,
 }: TeamOkrsSectionProps) {
   return (
     <div>
@@ -330,6 +398,7 @@ export function TeamOkrsSection({
           editableKRs={editableKRs}
           onAddKR={onAddKR}
           onDeleteKR={onDeleteKR}
+          initiatives={initiatives}
         />
       ) : (
         <Card className="p-5">

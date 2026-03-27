@@ -264,7 +264,7 @@ export function CommitmentOverview({
             />
           )}
 
-          <TeamOkrsSection commitment={commitment} />
+          <TeamOkrsSection commitment={commitment} initiatives={initiatives} />
 
           <InitiativeList
             initiatives={initiatives}

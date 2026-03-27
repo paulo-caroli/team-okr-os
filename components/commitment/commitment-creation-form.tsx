@@ -425,8 +425,8 @@ export function CommitmentCreationForm({ teamId, prefill }: CommitmentCreationFo
                               <Input
                                 name={`obj_${oi}_kr_${ki}_deadline`}
                                 type="date"
-                                label="Deadline (optional)"
-                                hint="Defaults to the Team OKR cycle end date"
+                                label="Target date (optional)"
+                                hint="Defaults to the end of cycle"
                                 onChange={(e) =>
                                   setKrDeadlines((p) => ({ ...p, [ck]: e.target.value }))
                                 }
