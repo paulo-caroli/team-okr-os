@@ -87,6 +87,23 @@ export function flatKeyResults(objectives: ObjectiveView[]): KeyResult[] {
   return objectives.flatMap((o) => o.keyResults)
 }
 
+/** Sort KRs by target date: overdue first, then earliest date, fallback to cycle end. */
+export function sortKeyResultsByDate(keyResults: KeyResult[], cycleEndDate: Date): KeyResult[] {
+  return [...keyResults].sort((a, b) => {
+    const now = Date.now()
+    const dateA = new Date(a.dueDate ?? cycleEndDate).getTime()
+    const dateB = new Date(b.dueDate ?? cycleEndDate).getTime()
+    const aOverdue = dateA < now
+    const bOverdue = dateB < now
+
+    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1
+    if (dateA !== dateB) return dateA - dateB
+    if (!!a.dueDate !== !!b.dueDate) return a.dueDate ? -1 : 1
+
+    return a.sortOrder - b.sortOrder
+  })
+}
+
 export function toCommitmentView(raw: {
   id: string
   teamId: string

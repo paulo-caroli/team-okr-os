@@ -18,7 +18,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { Confidence } from "@/lib/domain/check-in"
 import type { ObjectiveView, KeyResult } from "@/lib/domain/commitment"
-import { flatKeyResults } from "@/lib/domain/commitment"
+import { flatKeyResults, sortKeyResultsByDate } from "@/lib/domain/commitment"
 import type { InitiativeView, ExpectedImpact } from "@/lib/domain/initiative"
 import { cn, formatDate } from "@/lib/utils"
 
@@ -476,7 +476,7 @@ export function GripForm({
                         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                           Key Results
                         </p>
-                        {objectives[0].keyResults.map((kr) => {
+                        {sortKeyResultsByDate(objectives[0].keyResults, cycleEndDate).map((kr) => {
                           const relatedInitiatives = getInitiativesForKR(kr.id)
                           const selected = selectedInitiativesByKR[kr.id] ?? []
                           return (

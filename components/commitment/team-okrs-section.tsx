@@ -6,6 +6,7 @@ import type { InitiativeView } from "@/lib/domain/initiative"
 import {
   aggregateKeyResultProgress,
   keyResultProgressPercent,
+  sortKeyResultsByDate,
 } from "@/lib/domain/commitment"
 import { formatDateShort } from "@/lib/utils"
 import { SectionHeader } from "@/components/ui/section-header"
@@ -269,24 +270,9 @@ function ObjectiveCard({
 }) {
   const pct = Math.round(aggregateKeyResultProgress(objective))
 
-  const sortedReadKRs = [...objective.keyResults].sort((a, b) => {
-    const now = Date.now()
-    const dateA = new Date(a.dueDate ?? cycleEndDate).getTime()
-    const dateB = new Date(b.dueDate ?? cycleEndDate).getTime()
-    const aOverdue = dateA < now
-    const bOverdue = dateB < now
-
-    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1
-
-    const aHasCustom = !!a.dueDate
-    const bHasCustom = !!b.dueDate
-    if (dateA !== dateB) return dateA - dateB
-    if (aHasCustom !== bHasCustom) return aHasCustom ? -1 : 1
-
-    return a.sortOrder - b.sortOrder
-  })
-
-  const krsToRender = editMode ? editableKRs ?? [] : sortedReadKRs
+  const krsToRender = editMode
+    ? editableKRs ?? []
+    : sortKeyResultsByDate(objective.keyResults, cycleEndDate)
 
   return (
     <Card className="p-5">
