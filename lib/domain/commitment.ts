@@ -145,13 +145,6 @@ export function buildTeamOkrExport(
   }
   lines.push("")
 
-  const strategicContext = commitment.teamObjective?.trim()
-  if (strategicContext) {
-    lines.push("Strategic context:")
-    lines.push(strategicContext)
-    lines.push("")
-  }
-
   const obj = commitment.objectives[0]
   const allKRs = obj ? obj.keyResults : []
   const krTitleMap = new Map(allKRs.map((kr) => [kr.id, kr.title]))
@@ -159,11 +152,17 @@ export function buildTeamOkrExport(
   if (obj) {
     lines.push("Objective:")
     lines.push(obj.title)
-    if (obj.description?.trim()) {
-      lines.push(obj.description.trim())
-    }
     lines.push("")
+  }
 
+  const strategicContext = commitment.teamObjective?.trim()
+  if (strategicContext) {
+    lines.push("Strategic context:")
+    lines.push(strategicContext)
+    lines.push("")
+  }
+
+  if (obj) {
     const sortedKRs = sortKeyResultsByDate(allKRs, cycle.endDate)
     if (sortedKRs.length > 0) {
       lines.push("Key Results:")
@@ -235,7 +234,7 @@ export function buildTeamOkrExport(
         .map((id) => krTitleMap.get(id))
         .filter(Boolean) as string[]
       if (impactTitles.length > 0) {
-        lines.push("Impacts:")
+        lines.push("Impacts Key Results:")
         for (const t of impactTitles) {
           lines.push(`- ${t}`)
         }
