@@ -248,6 +248,7 @@ export function CommitmentOverview({
             commitment={commitment}
             teamId={teamId}
             onEdit={enterEditMode}
+            initiatives={initiatives}
           />
 
           {commitment.status === "COMPLETED" && (

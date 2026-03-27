@@ -104,6 +104,86 @@ export function sortKeyResultsByDate(keyResults: KeyResult[], cycleEndDate: Date
   })
 }
 
+/**
+ * Build a clean, human-readable text representation of a Team OKR
+ * suitable for pasting into ChatGPT or similar analysis tools.
+ */
+export function buildTeamOkrExport(
+  commitment: CommitmentView,
+  initiatives: { name: string; status: string; expectedImpact: { keyResultIds: string[] } | null }[],
+  fmtDate: (d: Date) => string,
+): string {
+  const { cycle } = commitment
+  const dateRange = `${fmtDate(cycle.startDate)} \u2192 ${fmtDate(cycle.endDate)}`
+  const cycleLabel = cycle.label?.trim()
+    ? `${cycle.label.trim()} (${dateRange})`
+    : dateRange
+
+  const lines: string[] = []
+  lines.push(`Team OKR \u2014 ${cycleLabel}`)
+  lines.push("")
+
+  const obj = commitment.objectives[0]
+  if (obj) {
+    lines.push(`Objective:`)
+    lines.push(obj.title)
+    if (obj.description?.trim()) {
+      lines.push(obj.description.trim())
+    }
+    lines.push("")
+
+    const sortedKRs = sortKeyResultsByDate(obj.keyResults, cycle.endDate)
+    if (sortedKRs.length > 0) {
+      lines.push("Key Results:")
+      lines.push("")
+      sortedKRs.forEach((kr, i) => {
+        const hasCustomDate = !!kr.dueDate
+        const effectiveDate = kr.dueDate ?? cycle.endDate
+        const datePart = hasCustomDate
+          ? fmtDate(effectiveDate)
+          : `End of cycle (${fmtDate(cycle.endDate)})`
+
+        lines.push(`${i + 1}. ${kr.title}`)
+        lines.push(`   Metric: ${kr.metric}`)
+        if (kr.baseline !== null) {
+          lines.push(`   Baseline: ${kr.baseline} · Current: ${kr.current} · Target: ${kr.target}`)
+        } else {
+          lines.push(`   Current: ${kr.current} · Target: ${kr.target}`)
+        }
+        lines.push(`   Target date: ${datePart}`)
+
+        const related = initiatives
+          .filter(
+            (init) =>
+              init.status !== "CONCLUDED" &&
+              init.expectedImpact?.keyResultIds.includes(kr.id),
+          )
+          .slice(0, 5)
+
+        if (related.length > 0) {
+          lines.push("")
+          lines.push("   Initiatives (current bets):")
+          for (const init of related) {
+            const statusHint =
+              init.status === "IN_PROGRESS" ? " (In progress)" : ""
+            lines.push(`   - ${init.name}${statusHint}`)
+          }
+        }
+        lines.push("")
+      })
+    }
+  }
+
+  lines.push("---")
+  lines.push("")
+  lines.push("Please analyze this Team OKR:")
+  lines.push("- Are the Key Results outcome-focused?")
+  lines.push("- Are the initiatives good bets to move the KRs?")
+  lines.push("- What would you improve?")
+
+  return lines.join("\n")
+}
+
 export function toCommitmentView(raw: {
   id: string
   teamId: string
