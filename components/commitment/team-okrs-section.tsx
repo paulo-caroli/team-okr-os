@@ -268,7 +268,25 @@ function ObjectiveCard({
   initiatives?: InitiativeView[]
 }) {
   const pct = Math.round(aggregateKeyResultProgress(objective))
-  const krsToRender = editMode ? editableKRs ?? [] : objective.keyResults
+
+  const sortedReadKRs = [...objective.keyResults].sort((a, b) => {
+    const now = Date.now()
+    const dateA = new Date(a.dueDate ?? cycleEndDate).getTime()
+    const dateB = new Date(b.dueDate ?? cycleEndDate).getTime()
+    const aOverdue = dateA < now
+    const bOverdue = dateB < now
+
+    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1
+
+    const aHasCustom = !!a.dueDate
+    const bHasCustom = !!b.dueDate
+    if (dateA !== dateB) return dateA - dateB
+    if (aHasCustom !== bHasCustom) return aHasCustom ? -1 : 1
+
+    return a.sortOrder - b.sortOrder
+  })
+
+  const krsToRender = editMode ? editableKRs ?? [] : sortedReadKRs
 
   return (
     <Card className="p-5">
